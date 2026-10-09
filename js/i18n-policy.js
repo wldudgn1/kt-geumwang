@@ -15,7 +15,7 @@
       'faq.as': ['구매 후 고장 나면 어떻게 하나요?', '구매일로부터 {a}일 안에 정상 사용 중 생긴 고장은 매장에서 무상으로 수리해 드려요. 폰과 품질보증서를 가지고 방문하시면 됩니다.'],
       'gallery.title': '매장 둘러보기',
       'gallery.sub': '금왕 올리브영 옆, 10년째 같은 자리를 지키고 있는 KT 공식대리점입니다.',
-      gallery: ['KT 금왕점 매장 입구', '갤럭시 체험존', '아이폰 체험존', '고객 무료 음료', 'KT 우수 매장 수상'],
+      gallery: ["매장 정면","매장 내부","무극로 거리 쪽 모습","수상 경력 · 우리 매장의 7가지 약속"],
     },
     en: {
       'modal.batteryNew': "Battery replaced with a new genuine one",
@@ -31,7 +31,7 @@
       'faq.as': ['What if it breaks after I buy it?', 'Faults from normal use within {a} days are repaired free at the store. Just bring the phone and its quality certificate.'],
       'gallery.title': 'Inside our store',
       'gallery.sub': 'An official KT store next to Olive Young in Geumwang, in the same spot for 10 years.',
-      gallery: ['Store entrance', 'Galaxy experience zone', 'iPhone experience zone', 'Free drinks for customers', 'KT top store awards'],
+      gallery: ["Storefront","Inside the store","From Mugeuk-ro street","Awards & our 7 promises"],
     },
     zh: {
       'modal.batteryNew': "已更换全新原装电池",
@@ -47,7 +47,7 @@
       'faq.as': ['买后坏了怎么办？', '自购买之日起{a}天内正常使用出现的故障，门店免费维修。请携带手机和质量保证书到店。'],
       'gallery.title': '门店实景',
       'gallery.sub': '位于金旺Olive Young旁，在同一位置经营10年的KT官方代理店。',
-      gallery: ['门店入口', 'Galaxy体验区', 'iPhone体验区', '顾客免费饮料', 'KT优秀门店奖'],
+      gallery: ["门店正面","门店内部","无极路街景","获奖经历·门店7项承诺"],
     },
     uz: {
       'modal.batteryNew': "Yangi original batareya o‘rnatilgan",
@@ -63,7 +63,7 @@
       'faq.as': ["Sotib olgandan keyin buzilsa-chi?", "{a} kun ichida oddiy foydalanishda chiqqan nosozlikni do'konda bepul tuzatamiz. Telefon va sertifikatni olib keling."],
       'gallery.title': "Do'konimiz",
       'gallery.sub': "Geumwang'dagi Olive Young yonida, 10 yildan beri shu joyda ishlayotgan KT rasmiy do'koni.",
-      gallery: ["Do'kon kirishi", 'Galaxy zonasi', 'iPhone zonasi', 'Mijozlar uchun bepul ichimlik', "KT eng yaxshi do'kon mukofotlari"],
+      gallery: ["Do'kon old tomoni","Do'kon ichi","Mugeuk-ro ko'chasidan","Mukofotlar va 7 va'damiz"],
     },
     vi: {
       'modal.batteryNew': "Đã thay pin chính hãng mới",
@@ -79,7 +79,7 @@
       'faq.as': ['Mua xong bị hỏng thì sao?', 'Lỗi do sử dụng bình thường trong {a} ngày được sửa miễn phí tại cửa hàng. Hãy mang máy và giấy bảo đảm đến.'],
       'gallery.title': 'Hình ảnh cửa hàng',
       'gallery.sub': 'Đại lý chính thức KT cạnh Olive Young ở Geumwang, cùng một vị trí suốt 10 năm.',
-      gallery: ['Lối vào cửa hàng', 'Khu trải nghiệm Galaxy', 'Khu trải nghiệm iPhone', 'Nước uống miễn phí', 'Giải thưởng cửa hàng xuất sắc KT'],
+      gallery: ["Mặt tiền cửa hàng","Bên trong cửa hàng","Nhìn từ phố Mugeuk-ro","Giải thưởng & 7 cam kết"],
     },
     ru: {
       'modal.batteryNew': "Установлена новая оригинальная батарея",
@@ -95,7 +95,7 @@
       'faq.as': ['Что если телефон сломается?', 'Неисправности при обычном использовании в течение {a} дней ремонтируем бесплатно в магазине. Принесите телефон и сертификат.'],
       'gallery.title': 'Наш магазин',
       'gallery.sub': 'Официальный магазин KT рядом с Olive Young в Кымване, на этом месте уже 10 лет.',
-      gallery: ['Вход в магазин', 'Зона Galaxy', 'Зона iPhone', 'Бесплатные напитки', 'Награды KT лучшему магазину'],
+      gallery: ["Фасад магазина","Внутри магазина","Вид с улицы Мугык-ро","Награды и 7 обещаний"],
     },
     si: {
       'modal.batteryNew': "නව මුල් බැටරියක් දමා ඇත",
@@ -111,7 +111,7 @@
       'faq.as': ['මිලදී ගත් පසු කැඩුණොත්?', 'දින {a} ඇතුළත සාමාන්‍ය භාවිතයේ දෝෂ වෙළඳසැලේදී නොමිලේ අලුත්වැඩියා කරමු. දුරකථනය සහ සහතිකය රැගෙන එන්න.'],
       'gallery.title': 'අපගේ වෙළඳසැල',
       'gallery.sub': 'Geumwang හි Olive Young අසල, වසර 10ක් එකම ස්ථානයේ ඇති KT නිල වෙළඳසැල.',
-      gallery: ['වෙළඳසැල් ප්‍රවේශය', 'Galaxy කලාපය', 'iPhone කලාපය', 'නොමිලේ බීම', 'KT හොඳම වෙළඳසැල් සම්මාන'],
+      gallery: ["වෙළඳසැල ඉදිරිපස","වෙළඳසැල ඇතුළත","Mugeuk-ro වීදියෙන්","සම්මාන සහ පොරොන්දු 7"],
     },
     km: {
       'modal.batteryNew': "បានប្តូរថ្មថ្មីដើម",
@@ -127,7 +127,7 @@
       'faq.as': ['បើខូចក្រោយទិញ ធ្វើយ៉ាងម៉េច?', 'ការខូចពេលប្រើធម្មតាក្នុង {a} ថ្ងៃ យើងជួសជុលឥតគិតថ្លៃនៅហាង។ សូមយកទូរស័ព្ទ និងវិញ្ញាបនបត្រមក។'],
       'gallery.title': 'ហាងរបស់យើង',
       'gallery.sub': 'ហាង KT ផ្លូវការនៅជាប់ Olive Young ក្នុង Geumwang នៅកន្លែងដដែល 10 ឆ្នាំមកហើយ។',
-      gallery: ['ច្រកចូលហាង', 'តំបន់ Galaxy', 'តំបន់ iPhone', 'ភេសជ្ជៈឥតគិតថ្លៃ', 'ពានរង្វាន់ហាងល្អបំផុត KT'],
+      gallery: ["មុខហាង","ខាងក្នុងហាង","មើលពីផ្លូវ Mugeuk-ro","ពានរង្វាន់ និងការសន្យា 7"],
     },
     th: {
       'modal.batteryNew': "เปลี่ยนแบตเตอรี่แท้ใหม่แล้ว",
@@ -143,7 +143,7 @@
       'faq.as': ['ซื้อแล้วเสียทำอย่างไร?', 'เสียจากการใช้งานปกติภายใน {a} วัน ซ่อมฟรีที่ร้าน นำเครื่องและใบรับประกันมาได้เลย'],
       'gallery.title': 'บรรยากาศร้าน',
       'gallery.sub': 'ร้าน KT อย่างเป็นทางการข้าง Olive Young ใน Geumwang เปิดที่เดิมมา 10 ปี',
-      gallery: ['ทางเข้าร้าน', 'โซน Galaxy', 'โซน iPhone', 'เครื่องดื่มฟรี', 'รางวัลร้านยอดเยี่ยม KT'],
+      gallery: ["หน้าร้าน","ภายในร้าน","มุมจากถนน Mugeuk-ro","รางวัลและคำมั่น 7 ข้อ"],
     },
   };
   Object.keys(P).forEach(l => { if (window.I18N[l]) Object.assign(window.I18N[l], P[l]); });

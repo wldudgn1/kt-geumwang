@@ -471,3 +471,44 @@ html[lang="km"] body { font-family: 'Noto Sans Khmer', 'Pretendard Variable', Pr
 .card.skeleton { min-height: 300px; background: linear-gradient(100deg, #eef0f2 30%, #f7f8f9 50%, #eef0f2 70%); background-size: 200% 100%; animation: shimmer 1.2s infinite linear; box-shadow: none; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .card.skeleton { animation: none; } }
+
+/* ---------- 매장 사진 (v2: 작고 균일한 타일 + 크게 보기) ---------- */
+.hero-visual { max-width: 480px; }
+.hero-visual img { aspect-ratio: 4 / 3; height: auto; border-radius: 22px; }
+.hero-visual .hv-chip-1 { left: -14px; bottom: -14px; }
+.hero-visual .hv-chip-2 { right: -12px; top: -14px; }
+
+.gallery-grid { grid-template-columns: repeat(4, 1fr); grid-template-rows: none; gap: 12px; }
+.g-item { display: block; padding: 0; border: 0; cursor: zoom-in; aspect-ratio: 4 / 3; text-align: left; font: inherit; box-shadow: var(--shadow); }
+.g-0 { grid-row: auto; grid-column: auto; }
+.g-0 img { object-position: center; }
+.g-3 img { object-position: center 30%; }
+.g-item .g-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 12px 10px; background: linear-gradient(transparent, rgba(10,11,13,.72)); color: #fff; font-size: 13.5px; font-weight: 700; line-height: 1.3; }
+.g-item .g-zoom { position: absolute; right: 8px; top: 8px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.88); color: var(--ink); font-size: 15px; opacity: 0; transition: opacity .2s; }
+.g-item:hover .g-zoom, .g-item:focus-visible .g-zoom { opacity: 1; }
+.g-item:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+.g-item figcaption { display: none; }
+
+.lightbox { position: fixed; inset: 0; z-index: 120; display: flex; align-items: center; justify-content: center; padding: 56px 16px 24px; background: rgba(10,11,13,.92); }
+.lightbox[hidden] { display: none; }
+.lightbox figure { margin: 0; max-width: min(1100px, 100%); max-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.lightbox img { max-width: 100%; max-height: calc(100vh - 140px); object-fit: contain; border-radius: 12px; }
+.lightbox figcaption { color: #fff; font-weight: 600; font-size: 15px; text-align: center; }
+.lb-btn { position: absolute; width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(255,255,255,.14); color: #fff; font-size: 28px; line-height: 1; display: grid; place-items: center; }
+.lb-btn:hover { background: rgba(255,255,255,.26); }
+.lb-x { right: 14px; top: calc(12px + env(safe-area-inset-top, 0px)); font-size: 20px; }
+.lb-prev { left: 12px; top: 50%; transform: translateY(-50%); }
+.lb-next { right: 12px; top: 50%; transform: translateY(-50%); }
+
+@media (max-width: 900px) {
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: auto; }
+  .g-0 { grid-column: auto; grid-row: auto; }
+}
+@media (max-width: 640px) {
+  .gallery-grid { gap: 8px; grid-auto-rows: auto; }
+  .g-item .g-cap { font-size: 12px; padding: 18px 8px 7px; }
+  .g-item .g-zoom { opacity: 1; width: 26px; height: 26px; font-size: 13px; }
+  .lb-prev, .lb-next { top: auto; bottom: 18px; transform: none; }
+  .lb-prev { left: calc(50% - 56px); } .lb-next { right: calc(50% - 56px); }
+  .lightbox { padding-bottom: 80px; }
+}
