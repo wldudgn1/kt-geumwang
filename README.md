@@ -23,3 +23,7 @@
 1. https://app.netlify.com/drop 접속
 2. 이 `kt` 폴더를 통째로 끌어다 놓기 → 주소 생성
 3. 원하면 도메인(예: ktgeumwang.com) 연결
+
+## 카톡 미리보기 이미지 다시 만들기
+og/og-card.html 을 고친 뒤:
+\\n→ images/og.jpg 로 저장하고 index.html 의 og:image 끝 ?v= 숫자를 올리기 (카톡 캐시 갱신용)
