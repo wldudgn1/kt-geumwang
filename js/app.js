@@ -90,7 +90,7 @@
   function applyI18n() {
     document.documentElement.lang = state.lang;
     $$('#langBar [data-lang]').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === state.lang));
-    $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n, { n: CFG.refundDays }); });
     $$('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
     $('#statDays').textContent = t('hero.days', { n: CFG.refundDays });
     $('#statAs').textContent = t('hero.days', { n: CFG.refundDays });
