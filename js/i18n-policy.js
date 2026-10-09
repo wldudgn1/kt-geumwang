@@ -148,3 +148,59 @@
   };
   Object.keys(P).forEach(l => { if (window.I18N[l]) Object.assign(window.I18N[l], P[l]); });
 })();
+
+/* 매장 운영 방식: 결제는 현금·계좌이체만, 전국 택배 가능 (FAQ 3·4번, "왜 우리 매장?" 5번 덮어쓰기) */
+(function () {
+  const S = {
+    ko: {
+      pay: ['결제는 어떻게 하나요?', '현금 또는 계좌이체로만 결제할 수 있어요. 카드 결제는 안 돼요.'],
+      ship: ['택배로도 받을 수 있나요?', '네, 전국 어디든 택배로 보내드려요. 전화나 카톡으로 원하는 폰을 말씀해 주시면 계좌이체 확인 후 발송해요. 택배로 받아도 무상 A/S와 반품 기준은 똑같아요.'],
+      easy: ['불필요한 번거로움 제로', '직거래 약속도, 사기 걱정도 없어요. 매장에 오시거나 택배로 편하게 받으세요.'],
+    },
+    en: {
+      pay: ['How can I pay?', 'Cash or bank transfer only. We do not accept cards.'],
+      ship: ['Can you ship it?', 'Yes, we ship anywhere in Korea. Tell us which phone you want by phone or KakaoTalk, and we send it after your bank transfer is confirmed. The same free repair and return policy applies.'],
+      easy: ['Zero hassle', 'No meet-ups with strangers, no scams. Visit the store or get it delivered.'],
+    },
+    zh: {
+      pay: ['怎么付款？', '只能现金或转账付款，不能刷卡。'],
+      ship: ['可以快递吗？', '可以，全国都能快递。通过电话或KakaoTalk告诉我们想要的手机，确认转账后发货。快递购买同样享受免费保修和退货政策。'],
+      easy: ['零麻烦', '不用约陌生人见面，不怕诈骗。来店或快递都很方便。'],
+    },
+    uz: {
+      pay: ["Qanday to'lash mumkin?", "Faqat naqd pul yoki bank o'tkazmasi. Karta qabul qilinmaydi."],
+      ship: ['Pochta orqali yuborasizmi?', "Ha, Koreyaning istalgan joyiga yuboramiz. Telefon yoki KakaoTalk orqali kerakli telefonni ayting, pul o'tkazmasi tasdiqlangach jo'natamiz. Bepul ta'mir va qaytarish shartlari bir xil."],
+      easy: ["Hech qanday ovora yo'q", "Notanishlar bilan uchrashuv va firibgarlik yo'q. Do'konga keling yoki pochta orqali oling."],
+    },
+    vi: {
+      pay: ['Thanh toán thế nào?', 'Chỉ nhận tiền mặt hoặc chuyển khoản. Không nhận thẻ.'],
+      ship: ['Có gửi hàng không?', 'Có, gửi hàng toàn Hàn Quốc. Báo máy bạn muốn qua điện thoại hoặc KakaoTalk, xác nhận chuyển khoản xong sẽ gửi ngay. Vẫn được bảo hành miễn phí và đổi trả như mua tại cửa hàng.'],
+      easy: ['Không phiền phức', 'Không hẹn gặp người lạ, không lo lừa đảo. Đến cửa hàng hoặc nhận qua bưu điện đều tiện.'],
+    },
+    ru: {
+      pay: ['Как оплатить?', 'Только наличные или банковский перевод. Карты не принимаем.'],
+      ship: ['Есть доставка?', 'Да, отправляем по всей Корее. Скажите по телефону или в KakaoTalk, какой телефон нужен, — отправим после подтверждения перевода. Бесплатный ремонт и возврат действуют так же.'],
+      easy: ['Никаких хлопот', 'Без встреч с незнакомцами и мошенников. Приходите в магазин или закажите доставку.'],
+    },
+    si: {
+      pay: ['ගෙවන්නේ කෙසේද?', 'මුදල් හෝ බැංකු මාරු කිරීම පමණි. කාඩ්පත් භාර නොගනිමු.'],
+      ship: ['තැපෑලෙන් එවනවාද?', 'ඔව්, කොරියාවේ ඕනෑම තැනකට එවමු. දුරකථනයෙන් හෝ KakaoTalk හරහා අවශ්‍ය දුරකථනය කියන්න, මුදල් මාරුව තහවුරු වූ පසු එවමු. නොමිලේ අලුත්වැඩියා සහ ආපසු දීම එලෙසමයි.'],
+      easy: ['කිසිම කරදරයක් නැත', 'නාඳුනන අය හමුවීම, වංචා නැත. වෙළඳසැලට එන්න හෝ තැපෑලෙන් ලබාගන්න.'],
+    },
+    km: {
+      pay: ['បង់ប្រាក់យ៉ាងដូចម្តេច?', 'សាច់ប្រាក់ ឬផ្ទេរតាមធនាគារប៉ុណ្ណោះ។ មិនទទួលកាតទេ។'],
+      ship: ['ផ្ញើតាមប្រៃសណីយ៍បានទេ?', 'បាន យើងផ្ញើទូទាំងកូរ៉េ។ ប្រាប់ទូរស័ព្ទដែលចង់បានតាមទូរស័ព្ទ ឬ KakaoTalk ក្រោយបញ្ជាក់ការផ្ទេរប្រាក់ យើងផ្ញើភ្លាម។ ការជួសជុលឥតគិតថ្លៃ និងការប្រគល់វិញដូចគ្នា។'],
+      easy: ['គ្មានការរំខាន', 'មិនចាំបាច់ជួបមនុស្សមិនស្គាល់ គ្មានការបោកប្រាស់។ មកហាង ឬទទួលតាមប្រៃសណីយ៍។'],
+    },
+    th: {
+      pay: ['ชำระเงินอย่างไร?', 'เงินสดหรือโอนเงินเท่านั้น ไม่รับบัตร'],
+      ship: ['ส่งพัสดุได้ไหม?', 'ได้ ส่งได้ทั่วเกาหลี แจ้งรุ่นที่ต้องการทางโทรศัพท์หรือ KakaoTalk ยืนยันการโอนแล้วจัดส่งทันที ได้รับประกันซ่อมฟรีและคืนสินค้าเหมือนกัน'],
+      easy: ['ไม่ยุ่งยาก', 'ไม่ต้องนัดเจอคนแปลกหน้า ไม่กลัวโดนโกง มาที่ร้านหรือรับทางพัสดุก็ได้'],
+    },
+  };
+  Object.keys(S).forEach(l => {
+    const d = window.I18N[l]; if (!d) return;
+    if (Array.isArray(d.faq)) { d.faq = d.faq.slice(); d.faq[3] = S[l].pay; d.faq[4] = S[l].ship; }
+    if (Array.isArray(d.why)) { d.why = d.why.slice(); d.why[4] = S[l].easy; }
+  });
+})();
