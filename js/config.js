@@ -24,6 +24,8 @@ window.SITE_CONFIG = {
   // 상품 DB (Supabase) — 비워두면 js/products.js 를 사용
   supabaseUrl: 'https://jrirneyyoytpwoxqwzxq.supabase.co',
   supabaseKey: 'sb_publishable_YDMez94Sbq0_zRrSZXOYtw_eOlNhHuu',
+  // 관리자 로그인 아이디 → 계정 이메일 (홈페이지 맨 아래 '관리자'에서 아이디로 로그인)
+  loginIds: { master: 'kt-geumwang-master@example.com' },
 
   naverPlace: 'https://naver.me/Ffe12tKe',
   // 카카오톡 채널 1:1 채팅 링크 (예: 'https://pf.kakao.com/_xxxxx/chat'). 비워두면 카톡 버튼이 숨겨집니다.

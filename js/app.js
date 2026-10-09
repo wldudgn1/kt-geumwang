@@ -175,9 +175,10 @@
     const list = filtered();
     $('#resultCount').textContent = t('products.count', { n: list.length });
     $('#emptyState').hidden = list.length > 0;
+    const admin = document.body.classList.contains('is-admin');
     $('#productGrid').innerHTML = list.map(p => {
       const save = p.marketPrice && p.marketPrice > p.price ? p.marketPrice - p.price : 0;
-      return `
+      const card = `
       <button class="card status-${p.status}" data-id="${esc(p.id)}">
         <div class="card-media">
           ${media(p, 'card-img')}
@@ -195,6 +196,13 @@
           ${save && p.status !== 'sold' ? `<div class="save">${esc(t('card.save', { p: price(save) }))}</div>` : ''}
         </div>
       </button>`;
+      if (!admin) return card;
+      // 관리자 모드: 카드 아래에 판매 상태 버튼과 수정 버튼
+      return `<div class="card-admin-wrap">${card}
+        <div class="card-admin" data-id="${esc(p.id)}">
+          <div class="ca-seg">${['sale', 'reserved', 'sold'].map(s => `<button type="button" data-status="${s}" class="${p.status === s ? 'on' : ''}">${esc(t('status.' + s))}</button>`).join('')}</div>
+          <button type="button" class="ca-edit" data-edit="${esc(p.id)}">✎ 수정</button>
+        </div></div>`;
     }).join('');
   }
 
@@ -242,6 +250,7 @@
           <a class="btn btn-red" href="${telHref}">${esc(t('cta.call'))}</a>
           ${CFG.kakao ? `<a class="btn btn-kakao" href="${esc(CFG.kakao)}" target="_blank" rel="noopener">${esc(t('cta.kakao'))}</a>` : ''}
           <button class="btn btn-line" id="shareBtn">${esc(t('modal.share'))}</button>
+          ${document.body.classList.contains('is-admin') ? `<button class="btn btn-dark" id="adminEditBtn">✎ 이 폰 수정</button>` : ''}
         </div>
       </div>`;
 
@@ -249,6 +258,7 @@
       $('#mainImg').src = th.dataset.src;
       $$('.thumbs img').forEach(x => x.classList.toggle('on', x === th));
     }));
+    if ($('#adminEditBtn')) $('#adminEditBtn').addEventListener('click', () => { closeModal(); window.GWAdmin && window.GWAdmin.edit(p.id); });
     $('#shareBtn').addEventListener('click', () => {
       const url = location.origin + location.pathname + '#' + p.id;
       (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(
@@ -338,6 +348,7 @@
       id: r.id, brand: r.brand, model: r.model, storage: r.storage || '', color: r.color || '', colorHex: r.color_hex,
       grade: r.grade, battery: r.battery, batteryReplaced: r.battery_replaced, price: r.price, marketPrice: r.market_price,
       status: r.status, images: r.images || [], includes: r.includes || [], note: { ko: r.note_ko || '', en: r.note_en || '' }, date: r.arrived,
+      _row: r,
     };
   }
 
@@ -346,15 +357,26 @@
     if (PRODUCTS.some(x => x.id === hashId)) openModal(hashId);
   }
 
-  if (USE_DB) {
-    fetch(CFG.supabaseUrl + '/rest/v1/used_phones?select=*&order=arrived.desc,created_at.desc', {
+  function loadProducts() {
+    return fetch(CFG.supabaseUrl + '/rest/v1/used_phones?select=*&order=arrived.desc,created_at.desc', {
       headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + CFG.supabaseKey },
+      cache: 'no-store',
     })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
       .then(rows => { PRODUCTS = rows.map(fromRow); })
-      .catch(() => { PRODUCTS = []; })
-      .finally(() => { loading = false; renderProducts(); openFromHash(); });
-  } else {
-    openFromHash();
+      .catch(() => { if (loading) PRODUCTS = []; })
+      .finally(() => { loading = false; renderProducts(); });
   }
+
+  // 관리자 모드(js/admin.js)에서 쓰는 연결 고리
+  window.GW = {
+    reload: () => (USE_DB ? loadProducts() : Promise.resolve()),
+    rerender: () => renderProducts(),
+    all: () => PRODUCTS.slice(),
+    get: id => PRODUCTS.find(x => x.id === id),
+    setStatus(id, s) { const p = PRODUCTS.find(x => x.id === id); if (p) { p.status = s; if (p._row) p._row.status = s; renderProducts(); } },
+  };
+
+  if (USE_DB) loadProducts().then(openFromHash);
+  else openFromHash();
 })();
