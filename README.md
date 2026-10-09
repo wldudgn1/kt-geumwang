@@ -9,10 +9,15 @@
 - `images/` — 상품 사진 넣는 폴더
 
 ## 폰 올리는 방법
-1. 사진을 `images/` 폴더에 저장 (예: `gw-009-1.jpg`)
-2. `admin.html` 열기 → 양식 작성 → "목록에 추가"
-3. "products.js 다운로드" → 받은 파일로 `js/products.js` 교체
-4. 호스팅에 다시 업로드
+1. 휴대폰으로 https://wldudgn1.github.io/kt-geumwang/admin.html 접속
+2. 관리자 이메일로 로그인 (처음엔 "계정 만들기" → 확인 메일 링크 클릭)
+3. "＋ 새 폰 등록" → 사진 찍기 → 정보 입력 → 저장하면 사이트에 바로 올라감
+4. 팔리면 목록에서 "판매완료" 버튼만 누르기
+
+## 데이터베이스
+- Supabase 프로젝트: kt-geumwang-usedphone (서울)
+- 구조와 권한: supabase/schema.sql
+- 직원 관리자 추가: Supabase SQL Editor 에서 insert into public.used_admins (email) values ('직원@이메일.com');
 
 ## 무료로 인터넷에 올리기 (예: Netlify)
 1. https://app.netlify.com/drop 접속

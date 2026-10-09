@@ -466,3 +466,8 @@ html[lang="km"] body { font-family: 'Noto Sans Khmer', 'Pretendard Variable', Pr
   .g-item figcaption { left: 8px; bottom: 8px; font-size: 12px; padding: 4px 9px; }
 }
 @media (prefers-reduced-motion: reduce) { .g-item img { transition: none; } }
+
+/* 상품 불러오는 중 */
+.card.skeleton { min-height: 300px; background: linear-gradient(100deg, #eef0f2 30%, #f7f8f9 50%, #eef0f2 70%); background-size: 200% 100%; animation: shimmer 1.2s infinite linear; box-shadow: none; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .card.skeleton { animation: none; } }

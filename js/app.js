@@ -3,7 +3,10 @@
 
   const CFG = window.SITE_CONFIG;
   const I18N = window.I18N;
-  const PRODUCTS = (window.PRODUCTS || []).slice();
+  // Supabase 가 설정돼 있으면 DB에서, 아니면 js/products.js 에서 상품을 읽어요
+  const USE_DB = !!(CFG.supabaseUrl && CFG.supabaseKey);
+  let PRODUCTS = USE_DB ? [] : (window.PRODUCTS || []).slice();
+  let loading = USE_DB;
   const LANGS = (CFG.languages || Object.keys(I18N)).filter(l => I18N[l]);
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
@@ -163,6 +166,12 @@
   }
 
   function renderProducts() {
+    if (loading) {
+      $('#resultCount').textContent = '';
+      $('#emptyState').hidden = true;
+      $('#productGrid').innerHTML = '<div class="card skeleton"></div>'.repeat(4);
+      return;
+    }
     const list = filtered();
     $('#resultCount').textContent = t('products.count', { n: list.length });
     $('#emptyState').hidden = list.length > 0;
@@ -222,6 +231,7 @@
           ${p.includes && p.includes.length ? `<tr><th>${esc(t('modal.includes'))}</th><td>${esc(p.includes.join(', '))}</td></tr>` : ''}
           ${p.date ? `<tr><th>${esc(t('modal.date'))}</th><td>${esc(p.date)}</td></tr>` : ''}
         </table>
+        ${p.batteryReplaced ? `<p class="m-unlocked">🔋 ${esc(t('modal.batteryNew'))}</p>` : ''}
         <p class="m-unlocked">✓ ${esc(t('modal.unlocked'))}</p>
         <div class="m-benefits">
           <h4>${esc(t('modal.benefits'))}</h4>
@@ -323,6 +333,28 @@
   initEvents();
   applyI18n();
 
-  const hashId = decodeURIComponent(location.hash.slice(1));
-  if (PRODUCTS.some(x => x.id === hashId)) openModal(hashId);
+  function fromRow(r) {
+    return {
+      id: r.id, brand: r.brand, model: r.model, storage: r.storage || '', color: r.color || '', colorHex: r.color_hex,
+      grade: r.grade, battery: r.battery, batteryReplaced: r.battery_replaced, price: r.price, marketPrice: r.market_price,
+      status: r.status, images: r.images || [], includes: r.includes || [], note: { ko: r.note_ko || '', en: r.note_en || '' }, date: r.arrived,
+    };
+  }
+
+  function openFromHash() {
+    const hashId = decodeURIComponent(location.hash.slice(1));
+    if (PRODUCTS.some(x => x.id === hashId)) openModal(hashId);
+  }
+
+  if (USE_DB) {
+    fetch(CFG.supabaseUrl + '/rest/v1/used_phones?select=*&order=arrived.desc,created_at.desc', {
+      headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + CFG.supabaseKey },
+    })
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+      .then(rows => { PRODUCTS = rows.map(fromRow); })
+      .catch(() => { PRODUCTS = []; })
+      .finally(() => { loading = false; renderProducts(); openFromHash(); });
+  } else {
+    openFromHash();
+  }
 })();

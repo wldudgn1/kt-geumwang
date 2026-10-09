@@ -2,6 +2,7 @@
 (function () {
   const P = {
     ko: {
+      'modal.batteryNew': "정품 새 배터리로 교체한 폰",
       'hero.stat3': '무상 A/S',
       warranty: [
         ['{a}일 무상 A/S', '구매일로부터 {a}일 동안 정상 사용 중 생긴 고장은 무상으로 수리해 드립니다. 기간이 지나도 합리적인 가격으로 A/S 받으실 수 있어요.'],
@@ -17,6 +18,7 @@
       gallery: ['KT 금왕점 매장 입구', '갤럭시 체험존', '아이폰 체험존', '고객 무료 음료', 'KT 우수 매장 수상'],
     },
     en: {
+      'modal.batteryNew': "Battery replaced with a new genuine one",
       'hero.stat3': 'Free repair',
       warranty: [
         ['{a}-day free repair', 'Any fault from normal use within {a} days of purchase is repaired free of charge. After that, repairs stay reasonably priced.'],
@@ -32,6 +34,7 @@
       gallery: ['Store entrance', 'Galaxy experience zone', 'iPhone experience zone', 'Free drinks for customers', 'KT top store awards'],
     },
     zh: {
+      'modal.batteryNew': "已更换全新原装电池",
       'hero.stat3': '免费保修',
       warranty: [
         ['{a}天免费保修', '自购买之日起{a}天内，正常使用中出现的故障免费维修。过保后也可享受合理价格的维修服务。'],
@@ -47,6 +50,7 @@
       gallery: ['门店入口', 'Galaxy体验区', 'iPhone体验区', '顾客免费饮料', 'KT优秀门店奖'],
     },
     uz: {
+      'modal.batteryNew': "Yangi original batareya o‘rnatilgan",
       'hero.stat3': 'Bepul ta’mir',
       warranty: [
         ['{a} kun bepul ta’mir', "Sotib olgan kundan boshlab {a} kun ichida oddiy foydalanishda chiqqan nosozlik bepul ta'mirlanadi. Keyin ham arzon narxda ta'mirlaymiz."],
@@ -62,6 +66,7 @@
       gallery: ["Do'kon kirishi", 'Galaxy zonasi', 'iPhone zonasi', 'Mijozlar uchun bepul ichimlik', "KT eng yaxshi do'kon mukofotlari"],
     },
     vi: {
+      'modal.batteryNew': "Đã thay pin chính hãng mới",
       'hero.stat3': 'Bảo hành miễn phí',
       warranty: [
         ['Bảo hành miễn phí {a} ngày', 'Trong {a} ngày kể từ ngày mua, lỗi phát sinh khi sử dụng bình thường được sửa miễn phí. Sau đó vẫn sửa với giá hợp lý.'],
@@ -77,6 +82,7 @@
       gallery: ['Lối vào cửa hàng', 'Khu trải nghiệm Galaxy', 'Khu trải nghiệm iPhone', 'Nước uống miễn phí', 'Giải thưởng cửa hàng xuất sắc KT'],
     },
     ru: {
+      'modal.batteryNew': "Установлена новая оригинальная батарея",
       'hero.stat3': 'Бесплатный ремонт',
       warranty: [
         ['{a} дней бесплатного ремонта', 'Неисправности при обычном использовании в течение {a} дней ремонтируем бесплатно. Потом — по разумной цене.'],
@@ -92,6 +98,7 @@
       gallery: ['Вход в магазин', 'Зона Galaxy', 'Зона iPhone', 'Бесплатные напитки', 'Награды KT лучшему магазину'],
     },
     si: {
+      'modal.batteryNew': "නව මුල් බැටරියක් දමා ඇත",
       'hero.stat3': 'නොමිලේ අලුත්වැඩියා',
       warranty: [
         ['දින {a} නොමිලේ අලුත්වැඩියා', 'මිලදී ගත් දින සිට දින {a} ඇතුළත සාමාන්‍ය භාවිතයේදී ඇතිවන දෝෂ නොමිලේ අලුත්වැඩියා කරමු. පසුවද සාධාරණ මිලට.'],
@@ -107,6 +114,7 @@
       gallery: ['වෙළඳසැල් ප්‍රවේශය', 'Galaxy කලාපය', 'iPhone කලාපය', 'නොමිලේ බීම', 'KT හොඳම වෙළඳසැල් සම්මාන'],
     },
     km: {
+      'modal.batteryNew': "បានប្តូរថ្មថ្មីដើម",
       'hero.stat3': 'ជួសជុលឥតគិតថ្លៃ',
       warranty: [
         ['ជួសជុលឥតគិតថ្លៃ {a} ថ្ងៃ', 'ក្នុងរយៈពេល {a} ថ្ងៃគិតពីថ្ងៃទិញ ការខូចពេលប្រើប្រាស់ធម្មតា យើងជួសជុលឥតគិតថ្លៃ។ ក្រោយមកក៏តម្លៃសមរម្យ។'],
@@ -122,6 +130,7 @@
       gallery: ['ច្រកចូលហាង', 'តំបន់ Galaxy', 'តំបន់ iPhone', 'ភេសជ្ជៈឥតគិតថ្លៃ', 'ពានរង្វាន់ហាងល្អបំផុត KT'],
     },
     th: {
+      'modal.batteryNew': "เปลี่ยนแบตเตอรี่แท้ใหม่แล้ว",
       'hero.stat3': 'ซ่อมฟรี',
       warranty: [
         ['ซ่อมฟรี {a} วัน', 'ภายใน {a} วันนับจากวันซื้อ หากเสียจากการใช้งานปกติ ซ่อมให้ฟรี หลังจากนั้นราคาสมเหตุสมผล'],
