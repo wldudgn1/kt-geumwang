@@ -92,10 +92,10 @@
     $$('#langBar [data-lang]').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === state.lang));
     $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
     $$('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
-    $('#statDays').textContent = t('hero.days', { n: CFG.asDays });
-    $('#statAs').textContent = t('hero.days', { n: CFG.asDays });
+    $('#statDays').textContent = t('hero.days', { n: CFG.refundDays });
+    $('#statAs').textContent = t('hero.days', { n: CFG.refundDays });
 
-    const days = { n: CFG.refundDays, a: CFG.asDays };
+    const days = { n: CFG.refundDays };
     $('#whyGrid').innerHTML = t('why').map((w, i) => `
       <article class="why-card"><div class="why-ic">${WHY_ICONS[i]}</div><h3>${esc(w[0])}</h3><p>${esc(w[1])}</p></article>`).join('');
 
@@ -132,7 +132,7 @@
     '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 6h-3a15.7 15.7 0 0 0-1.3-3.6A8 8 0 0 1 18.9 8ZM12 4c.8 1.2 1.5 2.5 1.9 4h-3.8c.4-1.5 1.1-2.8 1.9-4ZM4.3 14a8.2 8.2 0 0 1 0-4h3.4a16.5 16.5 0 0 0 0 4H4.3Zm.8 2h3c.2 1.3.7 2.5 1.3 3.6A8 8 0 0 1 5.1 16ZM8 8H5.1a8 8 0 0 1 4.3-3.6C8.8 5.5 8.3 6.7 8 8Zm4 12c-.8-1.2-1.5-2.5-1.9-4h3.8c-.4 1.5-1.1 2.8-1.9 4Zm2.3-6H9.7a14.7 14.7 0 0 1 0-4h4.6a14.7 14.7 0 0 1 0 4Zm.3 5.6c.6-1.1 1.1-2.3 1.3-3.6h3a8 8 0 0 1-4.3 3.6Zm1.7-5.6a16.5 16.5 0 0 0 0-4h3.4a8.2 8.2 0 0 1 0 4h-3.4Z"/></svg>',
   ];
   const GALLERY = ['images/store/storefront.jpg', 'images/store/inside.jpg', 'images/store/street.jpg', 'images/store/awards-board.jpg'];
-  const W_ICONS = ['🛠️', '↺', '🔍', '📄'];
+  const W_ICONS = ['↺', '🔍', '🔒', '👀'];
 
   /* ---------- 상품 목록 ---------- */
   const ALIASES = { apple: '아이폰 iphone 苹果 ไอโฟน айфон', samsung: '갤럭시 galaxy 삼성 samsung 三星 гэлакси', etc: '' };
@@ -218,7 +218,7 @@
       ? `<div class="gallery"><img id="mainImg" src="${esc(imgs[0])}" alt="${esc(p.model)}">${imgs.length > 1 ? `<div class="thumbs">${imgs.map((s, i) => `<img src="${esc(s)}" data-src="${esc(s)}" class="${i ? '' : 'on'}" alt="">`).join('')}</div>` : ''}</div>`
       : `<div class="gallery">${media(p, 'modal-illust')}</div>`;
     const gradeInfo = t('grades')[p.grade] || ['', ''];
-    const days = { n: CFG.refundDays, a: CFG.asDays };
+    const days = { n: CFG.refundDays };
 
     $('#modalBody').innerHTML = `
       ${gallery}

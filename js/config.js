@@ -13,10 +13,8 @@ window.SITE_CONFIG = {
   hoursWeekday: '09:00 – 20:00',
   hoursWeekend: '09:30 – 19:30',
 
-  // 구매 후 교환·환불 가능 기간(일) — 매장 정책에 맞게 수정하세요
+  // 구매 후 문제가 있을 때 교환·환불 가능한 기간(일). 무상 A/S는 없음
   refundDays: 7,
-  // 구매 후 무상 A/S 기간(일)
-  asDays: 180,
 
   // 상단 언어 바에 보일 언어 순서 (ko 한국어, en 영어, zh 중국어, uz 우즈베크어, vi 베트남어, ru 러시아어, si 싱할라어-스리랑카, km 크메르어-캄보디아, th 태국어)
   languages: ['ko', 'en', 'zh', 'uz', 'vi', 'ru', 'si', 'km'],
