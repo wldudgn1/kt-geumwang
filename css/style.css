@@ -512,3 +512,9 @@ html[lang="km"] body { font-family: 'Noto Sans Khmer', 'Pretendard Variable', Pr
   .lb-prev { left: calc(50% - 56px); } .lb-next { right: calc(50% - 56px); }
   .lightbox { padding-bottom: 80px; }
 }
+
+/* 로고 옆 "중고폰" */
+.logo .logo-text b { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.logo .logo-text b em { font-style: normal; color: var(--red); }
+.logo-footer .logo-text b em { color: #ff4a57; }
+@media (max-width: 380px) { .logo .logo-text b { font-size: 15.5px; gap: 4px; } }

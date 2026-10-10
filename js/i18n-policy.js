@@ -204,3 +204,9 @@
     if (Array.isArray(d.why)) { d.why = d.why.slice(); d.why[4] = S[l].easy; }
   });
 })();
+
+/* 로고 옆 "중고폰" 표시 (언어별) */
+(function () {
+  const U = { ko: '중고폰', en: 'Used Phones', zh: '二手手机', uz: 'B/U telefonlar', vi: 'Máy cũ', ru: 'Б/У телефоны', si: 'පාවිච්චි කළ ෆෝන්', km: 'ទូរស័ព្ទមួយទឹក', th: 'มือถือมือสอง' };
+  Object.keys(U).forEach(l => { if (window.I18N[l]) window.I18N[l]['logo.used'] = U[l]; });
+})();
