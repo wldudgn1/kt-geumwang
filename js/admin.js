@@ -269,7 +269,7 @@
     if (error || !adm || !adm.length) return false;
     document.body.classList.add('is-admin');
     if (!$('gaBar')) {
-      document.body.insertAdjacentHTML('afterbegin', `<div class="ga-bar" id="gaBar"><div class="wrap ga-bar-in"><b>관리자 모드</b><button type="button" class="ga-add" id="gaAdd">＋ 새 폰 등록</button><button type="button" id="gaSales">판매 장부</button><button type="button" id="gaLogout">로그아웃</button></div></div>`);
+      document.body.insertAdjacentHTML('afterbegin', `<div class="ga-bar" id="gaBar"><div class="wrap ga-bar-in"><b>관리자 모드</b><button type="button" class="ga-add" id="gaAdd">＋ 새 폰 등록</button><button type="button" id="gaSales">재고·판매 장부</button><button type="button" id="gaLogout">로그아웃</button></div></div>`);
       $('gaAdd').addEventListener('click', () => openEditor(null));
       $('gaSales').addEventListener('click', () => window.GWSales && window.GWSales.open());
       $('gaLogout').addEventListener('click', async () => {

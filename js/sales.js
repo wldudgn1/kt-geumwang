@@ -1,31 +1,42 @@
 /* =========================================================
- * 판매 장부 (관리자 모드 전용) — 구글시트처럼 칸에 바로 입력
- * - 열 순서는 기존 "중고폰 판매 리스트" 시트와 같음 (마지막에 매입가만 추가)
+ * 재고 · 판매 장부 (관리자 모드 전용) — 구글시트처럼 칸에 바로 입력
+ * - 탭 2개: 재고 / 판매 리스트. 열 순서는 기존 구글시트와 같음
  * - 칸을 고치고 다른 칸으로 넘어가면 자동 저장, Enter = 아래 칸
  * - 구글시트에서 복사한 여러 줄을 그대로 붙여넣기 가능
+ * - 재고 줄의 "판매" 버튼 → 그 줄이 판매 리스트로 넘어감
  * ========================================================= */
 (function () {
   'use strict';
   const CFG = window.SITE_CONFIG;
   if (!CFG.supabaseUrl || !CFG.supabaseKey) return;
 
-  const COLS = [
-    { k: 'arrived', t: '입고일', type: 'date', w: 82 },
-    { k: 'sold_at', t: '판매일', type: 'date', w: 82 },
-    { k: 'model', t: '모델명', w: 124, list: 'gsModelList' },
-    { k: 'color', t: '색상', w: 78 },
-    { k: 'storage', t: '용량', w: 70 },
-    { k: 'imei', t: 'IMEI', w: 150 },
-    { k: 'grade', t: '등급', w: 50, center: true },
-    { k: 'ref_price', t: '단가표상 A급', w: 118, tone: 'green' },
-    { k: 'sale_price', t: '판매금액', type: 'money', w: 100 },
-    { k: 'margin', t: '마진', type: 'calc', w: 94, tone: 'green' },
-    { k: 'channel', t: '판매채널', w: 92, tone: 'pink', center: true },
-    { k: 'memo', t: '기타', w: 118, center: true },
-    { k: 'deposit', t: '입금', w: 82, list: 'gsDepositList', center: true },
-    { k: 'cost', t: '매입가', type: 'money', w: 100 },
-  ];
-  const FIELDS = COLS.filter(c => c.type !== 'calc').map(c => c.k);
+  const C = {
+    arrived: { k: 'arrived', t: '입고일', type: 'date', w: 82 },
+    sold_at: { k: 'sold_at', t: '판매일', type: 'date', w: 82 },
+    model: { k: 'model', t: '모델명', w: 124, list: 'gsModelList' },
+    color: { k: 'color', t: '색상', w: 78, center: true },
+    storage: { k: 'storage', t: '용량', w: 70, center: true },
+    imei: { k: 'imei', t: 'IMEI', w: 170, center: true },
+    grade: { k: 'grade', t: '등급', w: 50, center: true },
+    ref_price: { k: 'ref_price', t: '단가표상 A급', w: 118 },
+    sale_price: { k: 'sale_price', t: '판매금액', type: 'money', w: 100 },
+    margin: { k: 'margin', t: '마진', type: 'calc', w: 94, tone: 'green' },
+    channel: { k: 'channel', t: '판매채널', w: 92, tone: 'pink', center: true },
+    memo: { k: 'memo', t: '기타', w: 130, center: true },
+    deposit: { k: 'deposit', t: '입금', w: 82, list: 'gsDepositList', center: true },
+    cost: { k: 'cost', t: '매입가', type: 'money', w: 100 },
+  };
+  const TABS = {
+    stock: {
+      label: '재고', table: 'used_stock', dateKey: 'arrived', file: '중고폰_재고',
+      cols: [C.arrived, C.model, C.color, C.storage, C.imei, C.grade, Object.assign({}, C.ref_price, { num: true }), Object.assign({}, C.memo, { w: 170 })],
+    },
+    sales: {
+      label: '판매 리스트', table: 'used_sales', dateKey: 'sold_at', file: '중고폰_판매_리스트', period: true,
+      cols: [C.arrived, C.sold_at, C.model, C.color, C.storage, C.imei, C.grade, Object.assign({}, C.ref_price, { tone: 'green' }), C.sale_price, C.margin, C.channel, C.memo, C.deposit, C.cost],
+    },
+  };
+  Object.values(TABS).forEach(T => { T.fields = T.cols.filter(c => c.type !== 'calc').map(c => c.k); });
   const BLANK_ROWS = 8;
 
   const $ = id => document.getElementById(id);
@@ -34,6 +45,7 @@
   const comma = n => (n == null ? '' : Number(n).toLocaleString('ko-KR'));
   const pad = n => String(n).padStart(2, '0');
   const today = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } } };
 
   // "26.10.01", "10.1", "10/1", "1001", "261001", "2026-10-01" → "2026-10-01"
   function parseDate(s) {
@@ -55,11 +67,13 @@
     return y + '-' + pad(m) + '-' + pad(d);
   }
   const fmtDate = iso => (iso ? String(iso).slice(2, 4) + '.' + String(iso).slice(5, 7) + '.' + String(iso).slice(8, 10) : '');
+  const isPlainNumber = s => /^[\d,\s]+$/.test(String(s ?? '')) && /\d/.test(String(s));
 
   function parseCell(col, text) {
     const s = String(text ?? '').trim();
     if (col.type === 'date') return parseDate(s);
     if (col.type === 'money') return toNum(s);
+    if (col.num && isPlainNumber(s)) return comma(toNum(s));   // 단가표: 숫자면 콤마 맞추고, 글자면 그대로
     return s || null;
   }
   function showCell(col, row) {
@@ -70,17 +84,19 @@
     return v ?? '';
   }
 
-  let sales = [];                       // 저장된 행 (DB)
-  let blanks = [];                      // 아직 저장 안 된 빈 행
-  let period = today().slice(0, 7);     // 'YYYY-MM' 또는 'all'
+  const data = { stock: { rows: [], blanks: [], loaded: false }, sales: { rows: [], blanks: [], loaded: false } };
+  let cur = store.get('gs-tab') === 'sales' ? 'sales' : 'stock';
+  let period = today().slice(0, 7);     // 판매 리스트 기간: 'YYYY-MM' 또는 'all'
   let built = false;
   let uid = 0;
   let pending = 0;
 
   const A = () => window.GWAdmin;
   const sb = () => A().sb();
-  const isEmpty = r => FIELDS.every(k => r[k] == null || r[k] === '');
-  const newBlank = () => ({ _key: 'n' + (++uid), _new: true });
+  const T = () => TABS[cur];
+  const D = () => data[cur];
+  const isEmptyIn = (tab, r) => TABS[tab].fields.every(k => r[k] == null || r[k] === '');
+  const newBlank = tab => ({ _key: tab[0] + 'n' + (++uid), _new: true });
 
   function build() {
     if (built) return; built = true;
@@ -88,11 +104,16 @@
     style.textContent = `
     #gsSheet{display:flex;flex-direction:column;overflow:hidden;background:#fff}
     .gs-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #e3e5e8;flex-wrap:wrap;padding-top:calc(10px + env(safe-area-inset-top,0px))}
-    .gs-head h2{margin:0 8px 0 0;font-size:18px}
+    .gs-tabs{display:flex;background:#f3f4f6;border-radius:10px;padding:3px;gap:3px;margin-right:6px}
+    .gs-tabs button{height:36px;padding:0 16px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:15px;font-weight:800;color:#6b7178;cursor:pointer;white-space:nowrap}
+    .gs-tabs button.on{background:#111214;color:#fff}
+    .gs-tabs button small{font-weight:700;opacity:.8}
     .gs-head .ga-chip{height:34px;padding:0 12px;font-size:13.5px}
     .gs-head input[type=month]{height:34px;border:1px solid #e3e5e8;border-radius:8px;padding:0 8px;font:inherit;font-size:13.5px}
+    .gs-period{display:flex;gap:6px;align-items:center}
+    .gs-period[hidden]{display:none}
     .gs-status{font-size:12.5px;color:#6b7178;margin-left:auto;white-space:nowrap}
-    .gs-status.err{color:#E60012;font-weight:700}
+    .gs-status.err{color:#E60012;font-weight:700;white-space:normal}
     .gs-hbtn{height:34px;padding:0 12px;border-radius:8px;border:1px solid #e3e5e8;background:#fff;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
     .gs-sum{display:flex;gap:0;border-bottom:1px solid #e3e5e8;overflow-x:auto;background:#fafafa}
     .gs-sum div{padding:8px 16px;border-right:1px solid #e3e5e8;white-space:nowrap}
@@ -102,8 +123,9 @@
     .gs-grid{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#f3f4f6}
     .gs-t{border-collapse:separate;border-spacing:0;font-size:13.5px;background:#fff;table-layout:fixed}
     .gs-t th{position:sticky;top:0;z-index:3;background:#ffeb3b;border:1px solid #c9b800;border-left:0;padding:7px 4px;font-weight:800;font-size:13px;white-space:nowrap}
-    .gs-t th.no,.gs-t td.no{position:sticky;left:0;z-index:2;width:38px;min-width:38px;background:#f3f4f6;color:#6b7178;text-align:center;font-size:12px;border-right:1px solid #c9ccd1}
+    .gs-t th.no,.gs-t td.no{position:sticky;left:0;z-index:2;background:#f3f4f6;color:#6b7178;text-align:center;font-size:12px;border-right:1px solid #c9ccd1}
     .gs-t th.no{z-index:4;background:#e9eaec;border-color:#c9ccd1}
+    .gs-t th.act{background:#e9eaec;border-color:#c9ccd1}
     .gs-t td{border-bottom:1px solid #e3e5e8;border-right:1px solid #e3e5e8;padding:0;height:32px}
     .gs-t td.green{background:#e3f1df}.gs-t td.pink{background:#f6dce4}
     .gs-t td.wait{background:#fff4d6}
@@ -112,9 +134,10 @@
     .gs-t td input:focus{box-shadow:inset 0 0 0 2px #1a73e8;background:#fff}
     .gs-t td input[readonly]{color:#0a7a35;font-weight:700;cursor:default}
     .gs-t td input.bad{box-shadow:inset 0 0 0 2px #E60012}
-    .gs-t td.del{width:34px;min-width:34px;text-align:center;border-right:0}
-    .gs-t td.del button{width:26px;height:26px;border:0;border-radius:6px;background:transparent;color:#9aa0a6;cursor:pointer;font-size:13px}
-    .gs-t td.del button:hover{background:#fdecee;color:#E60012}
+    .gs-t td.act{text-align:center;border-right:0;white-space:nowrap;padding:0 4px}
+    .gs-t td.act .x{width:26px;height:26px;border:0;border-radius:6px;background:transparent;color:#9aa0a6;cursor:pointer;font-size:13px}
+    .gs-t td.act .x:hover{background:#fdecee;color:#E60012}
+    .gs-t td.act .sell{height:26px;padding:0 10px;border:0;border-radius:6px;background:#E60012;color:#fff;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
     .gs-foot{border-top:1px solid #e3e5e8;padding:8px 14px calc(8px + env(safe-area-inset-bottom,0px));font-size:12.5px;color:#6b7178;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
     .gs-foot details{flex-basis:100%}
     .gs-foot summary{cursor:pointer;font-weight:700;color:#3b3f45}
@@ -126,11 +149,16 @@
     document.body.insertAdjacentHTML('beforeend', `
     <div class="ga-sheet" id="gsSheet" hidden>
       <div class="gs-head">
-        <h2>중고폰 판매 리스트</h2>
-        <button type="button" class="ga-chip" data-p="this">이번 달</button>
-        <button type="button" class="ga-chip" data-p="last">지난달</button>
-        <button type="button" class="ga-chip" data-p="all">전체</button>
-        <input type="month" id="gsMonth" aria-label="월 선택">
+        <div class="gs-tabs" id="gsTabs" role="tablist">
+          <button type="button" data-tab="stock">재고 <small id="gsTabStock"></small></button>
+          <button type="button" data-tab="sales">판매 리스트</button>
+        </div>
+        <div class="gs-period" id="gsPeriod">
+          <button type="button" class="ga-chip" data-p="this">이번 달</button>
+          <button type="button" class="ga-chip" data-p="last">지난달</button>
+          <button type="button" class="ga-chip" data-p="all">전체</button>
+          <input type="month" id="gsMonth" aria-label="월 선택">
+        </div>
         <span class="gs-status" id="gsStatus"></span>
         <button type="button" class="gs-hbtn" id="gsCsv">엑셀 받기</button>
         <button type="button" class="ga-x" id="gsClose" aria-label="닫기">✕</button>
@@ -138,7 +166,7 @@
       <div class="gs-sum" id="gsSum"></div>
       <div class="gs-grid" id="gsGrid"></div>
       <div class="gs-foot">
-        <span>칸을 고치고 다른 칸으로 넘어가면 자동 저장돼요 · Enter = 아래 칸 · 구글시트에서 복사한 줄을 그대로 붙여넣을 수 있어요 · 날짜는 10.1 처럼 쳐도 돼요</span>
+        <span id="gsHelp"></span>
         <details><summary>모델별 집계 보기</summary><div class="gs-models" id="gsModels"></div></details>
       </div>
       <datalist id="gsModelList"></datalist>
@@ -147,7 +175,8 @@
 
     $('gsClose').addEventListener('click', close);
     $('gsCsv').addEventListener('click', csv);
-    document.querySelector('#gsSheet .gs-head').addEventListener('click', e => {
+    $('gsTabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) switchTab(b.dataset.tab); });
+    $('gsPeriod').addEventListener('click', e => {
       const b = e.target.closest('[data-p]'); if (!b) return;
       const now = new Date();
       if (b.dataset.p === 'all') period = 'all';
@@ -160,48 +189,56 @@
     grid.addEventListener('change', e => { const i = e.target.closest('input[data-k]'); if (i) onEdit(i); });
     grid.addEventListener('keydown', onKey);
     grid.addEventListener('paste', onPaste);
-    grid.addEventListener('click', e => { const d = e.target.closest('[data-del]'); if (d) removeRow(d.dataset.del); });
+    grid.addEventListener('click', e => {
+      const d = e.target.closest('[data-del]'), s = e.target.closest('[data-sell]');
+      if (d) removeRow(d.dataset.del);
+      if (s) sellStock(s.dataset.sell);
+    });
   }
 
   /* ---------- 데이터 ---------- */
-  async function load() {
-    const all = [];
+  async function load(tab) {
+    const all = [], cfg = TABS[tab];
     for (let from = 0; ; from += 1000) {
-      const { data, error } = await sb().from('used_sales').select('*').order('sold_at', { ascending: true }).order('created_at', { ascending: true }).range(from, from + 999);
-      if (error) { status(A().friendly(error), true); break; }
-      all.push(...(data || []));
-      if (!data || data.length < 1000) break;
+      const { data: rows, error } = await sb().from(cfg.table).select('*').order(cfg.dateKey, { ascending: true }).order('created_at', { ascending: true }).range(from, from + 999);
+      if (error) { status(A().friendly(error), true); return false; }
+      all.push(...(rows || []));
+      if (!rows || rows.length < 1000) break;
     }
-    sales = all.map(r => Object.assign(r, { _key: 'r' + r.id }));
+    data[tab].rows = all.map(r => Object.assign(r, { _key: tab[0] + 'r' + r.id }));
+    data[tab].loaded = true;
+    return true;
   }
-  function visible() {
-    const saved = sales.filter(r => r._new || period === 'all' || !r.sold_at || String(r.sold_at).slice(0, 7) === period);
-    return saved.concat(blanks);
-  }
-  function rowByKey(key) { return sales.find(r => r._key === key) || blanks.find(r => r._key === key); }
+  const inPeriod = r => !T().period || period === 'all' || !r.sold_at || String(r.sold_at).slice(0, 7) === period;
+  function visible() { return D().rows.filter(r => r._new || inPeriod(r)).concat(D().blanks); }
+  function counted(tab) { return data[tab].rows.filter(r => !isEmptyIn(tab, r) && (tab !== 'sales' || period === 'all' || !r.sold_at || String(r.sold_at).slice(0, 7) === period)); }
+  function rowByKey(key) { return D().rows.find(r => r._key === key) || D().blanks.find(r => r._key === key); }
 
   function status(text, err) { const s = $('gsStatus'); s.textContent = text; s.className = 'gs-status' + (err ? ' err' : ''); }
   function saved() { if (pending === 0) { const d = new Date(); status('저장됨 ' + pad(d.getHours()) + ':' + pad(d.getMinutes())); } }
 
   // 행 단위로 순서대로 저장 (새 행은 첫 저장 때 생성)
-  function saveRow(row, keys) {
+  function saveRow(tab, row, keys) {
+    const cfg = TABS[tab], st = data[tab];
     pending++; status('저장 중…');
     row._q = (row._q || Promise.resolve()).then(async () => {
       if (!row.id) {
-        if (isEmpty(row)) return;
-        if (!row.sold_at) { row.sold_at = today(); paintCell(row, 'sold_at'); }
-        const payload = {}; FIELDS.forEach(k => { payload[k] = row[k] ?? null; });
-        if (row.phone_id) payload.phone_id = row.phone_id;
-        const { data, error } = await sb().from('used_sales').insert(payload).select().single();
+        if (isEmptyIn(tab, row)) return;
+        if (!row[cfg.dateKey]) { row[cfg.dateKey] = today(); if (tab === cur) paintCell(row, cfg.dateKey); }
+        const payload = {}; cfg.fields.forEach(k => { payload[k] = row[k] ?? null; });
+        if (tab === 'sales' && row.phone_id) payload.phone_id = row.phone_id;
+        const { data: ins, error } = await sb().from(cfg.table).insert(payload).select().single();
         if (error) throw error;
-        row.id = data.id; row.created_at = data.created_at;
-        blanks = blanks.filter(b => b !== row); sales.push(row);
-        const tr = document.querySelector(`#gsGrid tr[data-key="${row._key}"]`);
-        if (tr) { const del = tr.querySelector('td.del'); if (del) del.innerHTML = `<button type="button" data-del="${row._key}" aria-label="줄 삭제">✕</button>`; }
-        topUpBlanks();
+        row.id = ins.id; row.created_at = ins.created_at;
+        st.blanks = st.blanks.filter(b => b !== row); st.rows.push(row);
+        if (tab === cur) {
+          const tr = document.querySelector(`#gsGrid tr[data-key="${row._key}"]`);
+          if (tr) { const a = tr.querySelector('td.act'); if (a) a.innerHTML = actHtml(row); }
+          topUpBlanks();
+        }
       } else {
         const patch = {}; keys.forEach(k => { patch[k] = row[k] ?? null; });
-        const { error } = await sb().from('used_sales').update(patch).eq('id', row.id);
+        const { error } = await sb().from(cfg.table).update(patch).eq('id', row.id);
         if (error) throw error;
       }
     }).then(() => { pending--; saved(); summary(); }, err => { pending--; status('저장 실패: ' + A().friendly(err), true); });
@@ -209,63 +246,82 @@
   }
 
   /* ---------- 화면 ---------- */
+  const actW = () => (cur === 'stock' ? 92 : 34);
+  function actHtml(row) {
+    if (!row.id) return '';
+    return (cur === 'stock' ? `<button type="button" class="sell" data-sell="${row._key}">판매</button> ` : '') + `<button type="button" class="x" data-del="${row._key}" aria-label="줄 삭제">✕</button>`;
+  }
   function cellHtml(row, col) {
-    const cls = [col.type === 'money' || col.type === 'calc' ? 'r' : col.center || col.type === 'date' ? 'c' : ''].join(' ');
+    const cls = col.type === 'money' || col.type === 'calc' || col.num ? 'r' : col.center || col.type === 'date' ? 'c' : '';
     const tdCls = [col.tone || '', col.k === 'deposit' && /입금전/.test(row.deposit || '') ? 'wait' : ''].join(' ').trim();
     return `<td class="${tdCls}"><input data-k="${col.k}" class="${cls}" value="${esc(showCell(col, row))}" ${col.type === 'calc' ? 'readonly tabindex="-1"' : ''} ${col.list ? `list="${col.list}"` : ''} ${col.type === 'money' ? 'inputmode="numeric"' : ''} autocomplete="off" aria-label="${esc(col.t)}"></td>`;
   }
   function rowHtml(row, i) {
-    return `<tr data-key="${row._key}"><td class="no">${i + 1}</td>${COLS.map(c => cellHtml(row, c)).join('')}<td class="del">${row.id ? `<button type="button" data-del="${row._key}" aria-label="줄 삭제">✕</button>` : ''}</td></tr>`;
+    return `<tr data-key="${row._key}"><td class="no">${i + 1}</td>${T().cols.map(c => cellHtml(row, c)).join('')}<td class="act">${actHtml(row)}</td></tr>`;
   }
   function render(keepScroll) {
     const grid = $('gsGrid'); const top = grid.scrollTop;
-    while (blanks.length < BLANK_ROWS) blanks.push(newBlank());
-    const rows = visible();
-    grid.innerHTML = `<table class="gs-t" style="width:${38 + 34 + COLS.reduce((a, c) => a + c.w, 0)}px"><colgroup><col style="width:38px">${COLS.map(c => `<col style="width:${c.w}px">`).join('')}<col style="width:34px"></colgroup>
-      <thead><tr><th class="no">NO</th>${COLS.map(c => `<th>${c.t}</th>`).join('')}<th></th></tr></thead>
+    while (D().blanks.length < BLANK_ROWS) D().blanks.push(newBlank(cur));
+    const rows = visible(), cols = T().cols;
+    grid.innerHTML = `<table class="gs-t" style="width:${38 + actW() + cols.reduce((a, c) => a + c.w, 0)}px"><colgroup><col style="width:38px">${cols.map(c => `<col style="width:${c.w}px">`).join('')}<col style="width:${actW()}px"></colgroup>
+      <thead><tr><th class="no">NO</th>${cols.map(c => `<th>${c.t}</th>`).join('')}<th class="act"></th></tr></thead>
       <tbody>${rows.map(rowHtml).join('')}</tbody></table>`;
     if (keepScroll) grid.scrollTop = top;
+    document.querySelectorAll('#gsTabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === cur));
+    $('gsPeriod').hidden = !T().period;
     const now = new Date(), l = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const thisYm = now.getFullYear() + '-' + pad(now.getMonth() + 1), lastYm = l.getFullYear() + '-' + pad(l.getMonth() + 1);
-    document.querySelectorAll('#gsSheet [data-p]').forEach(b => b.classList.toggle('on', (b.dataset.p === 'all' && period === 'all') || (b.dataset.p === 'this' && period === thisYm) || (b.dataset.p === 'last' && period === lastYm)));
+    document.querySelectorAll('#gsPeriod [data-p]').forEach(b => b.classList.toggle('on', (b.dataset.p === 'all' && period === 'all') || (b.dataset.p === 'this' && period === thisYm) || (b.dataset.p === 'last' && period === lastYm)));
     $('gsMonth').value = period === 'all' ? '' : period;
+    $('gsHelp').textContent = (cur === 'stock' ? '팔린 폰은 줄 끝의 "판매"를 누르면 판매 리스트로 넘어가요 · ' : '') + '칸을 고치고 다른 칸으로 넘어가면 자동 저장 · Enter = 아래 칸 · 구글시트에서 복사한 줄을 그대로 붙여넣기 · 날짜는 10.1 처럼 쳐도 돼요';
     summary();
   }
   function topUpBlanks() {
     const body = document.querySelector('#gsGrid tbody'); if (!body) return;
-    while (blanks.length < BLANK_ROWS) {
-      const b = newBlank(); blanks.push(b);
+    while (D().blanks.length < BLANK_ROWS) {
+      const b = newBlank(cur); D().blanks.push(b);
       body.insertAdjacentHTML('beforeend', rowHtml(b, body.children.length));
     }
   }
   function paintCell(row, k) {
     const tr = document.querySelector(`#gsGrid tr[data-key="${row._key}"]`); if (!tr) return;
-    const col = COLS.find(c => c.k === k), inp = tr.querySelector(`input[data-k="${k}"]`);
-    if (inp && document.activeElement !== inp) inp.value = showCell(col, row);
+    const col = T().cols.find(c => c.k === k), inp = tr.querySelector(`input[data-k="${k}"]`);
+    if (col && inp && document.activeElement !== inp) inp.value = showCell(col, row);
     if (k === 'deposit' && inp) inp.parentElement.classList.toggle('wait', /입금전/.test(row.deposit || ''));
-    const m = tr.querySelector('input[data-k="margin"]'); if (m) m.value = showCell(COLS.find(c => c.k === 'margin'), row);
+    const m = tr.querySelector('input[data-k="margin"]'); if (m) m.value = showCell(C.margin, row);
   }
   function summary() {
-    const list = sales.filter(r => (period === 'all' || !r.sold_at || String(r.sold_at).slice(0, 7) === period) && !isEmpty(r));
+    const list = counted(cur);
     const sum = k => list.reduce((a, r) => a + (r[k] || 0), 0);
-    const wait = list.filter(r => /입금전/.test(r.deposit || ''));
-    $('gsSum').innerHTML = `
-      <div><span>판매댓수</span><b>${list.length}</b></div>
-      <div><span>매입합산</span><b>${comma(sum('cost'))}</b></div>
-      <div><span>매출</span><b>${comma(sum('sale_price'))}</b></div>
-      <div><span>마진</span><b>${comma(sum('sale_price') - sum('cost'))}</b></div>
-      <div class="${wait.length ? 'warn' : ''}"><span>입금전</span><b>${wait.length}건 · ${comma(wait.reduce((a, r) => a + (r.sale_price || 0), 0))}</b></div>`;
+    if (cur === 'stock') {
+      const priced = list.filter(r => isPlainNumber(r.ref_price));
+      const oldest = list.map(r => r.arrived).filter(Boolean).sort()[0];
+      $('gsSum').innerHTML = `
+        <div><span>재고 대수</span><b>${list.length}</b></div>
+        <div><span>단가표 합계</span><b>${comma(priced.reduce((a, r) => a + (toNum(r.ref_price) || 0), 0))}</b></div>
+        <div><span>단가 미입력</span><b>${list.length - priced.length}대</b></div>
+        <div><span>가장 오래된 입고</span><b>${oldest ? fmtDate(oldest) : '-'}</b></div>`;
+    } else {
+      const wait = list.filter(r => /입금전/.test(r.deposit || ''));
+      $('gsSum').innerHTML = `
+        <div><span>판매댓수</span><b>${list.length}</b></div>
+        <div><span>매입합산</span><b>${comma(sum('cost'))}</b></div>
+        <div><span>매출</span><b>${comma(sum('sale_price'))}</b></div>
+        <div><span>마진</span><b>${comma(sum('sale_price') - sum('cost'))}</b></div>
+        <div class="${wait.length ? 'warn' : ''}"><span>입금전</span><b>${wait.length}건 · ${comma(wait.reduce((a, r) => a + (r.sale_price || 0), 0))}</b></div>`;
+    }
+    if (data.stock.loaded) $('gsTabStock').textContent = counted('stock').length + '대';
     const by = {};
-    list.forEach(r => { const k = r.model || '(모델명 없음)'; by[k] = by[k] || { n: 0, s: 0 }; by[k].n++; by[k].s += r.sale_price || 0; });
-    $('gsModels').innerHTML = Object.entries(by).sort((a, b) => b[1].n - a[1].n || b[1].s - a[1].s).map(([m, v]) => `<span>${esc(m)} ${v.n}대 · ${comma(v.s)}</span>`).join('') || '이 기간에 판매 기록이 없어요.';
-    const names = Array.from(new Set(sales.map(r => r.model).concat((window.GW ? window.GW.all() : []).map(p => p.model)).filter(Boolean)));
+    list.forEach(r => { const k = r.model || '(모델명 없음)'; by[k] = by[k] || { n: 0, s: 0 }; by[k].n++; by[k].s += (cur === 'stock' ? (isPlainNumber(r.ref_price) ? toNum(r.ref_price) : 0) : r.sale_price) || 0; });
+    $('gsModels').innerHTML = Object.entries(by).sort((a, b) => b[1].n - a[1].n || b[1].s - a[1].s).map(([m, v]) => `<span>${esc(m)} ${v.n}대${v.s ? ' · ' + comma(v.s) : ''}</span>`).join('') || '기록이 없어요.';
+    const names = Array.from(new Set(data.stock.rows.concat(data.sales.rows).map(r => r.model).concat((window.GW ? window.GW.all() : []).map(p => p.model)).filter(Boolean)));
     $('gsModelList').innerHTML = names.map(m => `<option value="${esc(m)}">`).join('');
   }
 
   /* ---------- 입력 ---------- */
   function onEdit(inp) {
     const tr = inp.closest('tr'), row = rowByKey(tr.dataset.key); if (!row) return;
-    const col = COLS.find(c => c.k === inp.dataset.k);
+    const col = T().cols.find(c => c.k === inp.dataset.k);
     const v = parseCell(col, inp.value);
     const bad = (col.type === 'date' || col.type === 'money') && inp.value.trim() !== '' && v == null;
     inp.classList.toggle('bad', bad);
@@ -273,7 +329,7 @@
     row[col.k] = v;
     inp.value = showCell(col, row);
     paintCell(row, col.k);
-    saveRow(row, [col.k]);
+    saveRow(cur, row, [col.k]);
   }
   function onKey(e) {
     const inp = e.target.closest('input[data-k]'); if (!inp) return;
@@ -291,20 +347,22 @@
     const text = (e.clipboardData || window.clipboardData).getData('text');
     if (!/[\t\n]/.test(text.replace(/\r?\n$/, ''))) return;   // 한 칸짜리는 평소대로
     e.preventDefault();
+    const cols = T().cols, tab = cur;
     let lines = text.replace(/\r/g, '').split('\n'); if (lines[lines.length - 1] === '') lines.pop();
     let table = lines.map(l => l.split('\t'));
-    let startCol = COLS.findIndex(c => c.k === inp.dataset.k);
+    const startCol = cols.findIndex(c => c.k === inp.dataset.k);
     // 시트의 맨 앞 NO 열까지 같이 복사해 온 경우 건너뛰기
-    if (startCol === 0 && table.every(r => /^\d{0,3}$/.test((r[0] || '').trim()) && r.length > 1 && (parseDate(r[1]) || (r[1] || '').trim() === ''))) table = table.map(r => r.slice(1));
+    const filled = table.filter(r => r.some(c => c.trim() !== ''));
+    if (startCol === 0 && filled.length && filled.every(r => /^\d{0,3}$/.test((r[0] || '').trim()) && r.length > 1 && (parseDate(r[1]) || (r[1] || '').trim() === '')) && filled.some(r => parseDate(r[1]))) table = table.map(r => r.slice(1));
     const rows = visible();
     let ri = rows.findIndex(r => r._key === inp.closest('tr').dataset.key);
     const touched = [];
     table.forEach(cells => {
-      if (cells.every(c => c.trim() === '')) { ri++; return; }
-      while (ri >= rows.length) { const b = newBlank(); blanks.push(b); rows.push(b); }
+      if (cells.every(c => c.trim() === '')) return;            // 빈 줄은 건너뛰고 위로 붙임
+      while (ri >= rows.length) { const b = newBlank(tab); D().blanks.push(b); rows.push(b); }
       const row = rows[ri++], keys = [];
       cells.forEach((c, j) => {
-        const col = COLS[startCol + j]; if (!col || col.type === 'calc') return;
+        const col = cols[startCol + j]; if (!col || col.type === 'calc') return;
         const v = parseCell(col, c);
         if ((col.type === 'date' || col.type === 'money') && c.trim() !== '' && v == null) return;
         row[col.k] = v; keys.push(col.k);
@@ -312,53 +370,84 @@
       if (keys.length) touched.push([row, keys]);
     });
     render(true);
-    touched.forEach(([row, keys]) => saveRow(row, keys));
+    touched.forEach(([row, keys]) => saveRow(tab, row, keys));
     status(touched.length + '줄 붙여넣는 중…');
   }
   async function removeRow(key) {
     const row = rowByKey(key); if (!row || !row.id) return;
-    if (!(await A().ask(`${row.model || '이'} 줄을 지울까요? 집계에서도 빠져요.`))) return;
-    const { error } = await sb().from('used_sales').delete().eq('id', row.id);
+    if (!(await A().ask(`${row.model || '이'} 줄을 지울까요?`))) return;
+    const { error } = await sb().from(T().table).delete().eq('id', row.id);
     if (error) { status('삭제 실패: ' + A().friendly(error), true); return; }
-    sales = sales.filter(r => r !== row); render(true); status('삭제했어요');
+    D().rows = D().rows.filter(r => r !== row); render(true); status('삭제했어요');
   }
 
-  /* ---------- 열기/닫기 ---------- */
-  async function open() {
+  // 재고 → 판매 리스트로 넘기기
+  async function sellStock(key) {
+    const row = data.stock.rows.find(r => r._key === key); if (!row || !row.id) return;
+    if (!(await A().ask(`${row.model || '이 폰'}을(를) 판매 리스트로 넘길까요? 재고에서는 빠져요.`))) return;
+    status('판매 리스트로 넘기는 중…');
+    const payload = { arrived: row.arrived || null, sold_at: today(), model: row.model || null, color: row.color || null, storage: row.storage || null, imei: row.imei || null, grade: row.grade || null, ref_price: row.ref_price || null, memo: row.memo || null };
+    const { data: ins, error } = await sb().from('used_sales').insert(payload).select().single();
+    if (error) { status('넘기기 실패: ' + A().friendly(error), true); return; }
+    const del = await sb().from('used_stock').delete().eq('id', row.id);
+    if (del.error) { status('판매 리스트에는 넣었지만 재고에서 빼지 못했어요. 재고 줄을 직접 지워 주세요: ' + A().friendly(del.error), true); }
+    else data.stock.rows = data.stock.rows.filter(r => r !== row);
+    const sale = Object.assign({}, payload, { id: ins.id, created_at: ins.created_at, _key: 'sr' + ins.id, _new: true });
+    if (!data.sales.loaded) await load('sales');
+    if (!data.sales.rows.some(r => r.id === sale.id)) data.sales.rows.push(sale);
+    else data.sales.rows.find(r => r.id === sale.id)._new = true;
+    period = today().slice(0, 7);
+    await switchTab('sales', 'sr' + ins.id);
+    if (!del.error) status('판매 리스트로 넘겼어요. 판매금액과 입금을 적어 주세요.');
+  }
+
+  /* ---------- 열기/닫기/탭 ---------- */
+  async function switchTab(tab, focusKey) {
+    cur = tab; store.set('gs-tab', tab);
+    if (!D().loaded) { status('불러오는 중…'); if (!(await load(tab))) return; status(''); }
+    render();
+    const grid = $('gsGrid');
+    const tr = focusKey && document.querySelector(`#gsGrid tr[data-key="${focusKey}"]`);
+    if (tr) { tr.scrollIntoView({ block: 'center' }); const i = tr.querySelector('input[data-k="sale_price"]'); if (i) i.focus(); }
+    else grid.scrollTop = grid.scrollHeight;   // 새로 적을 빈 줄이 보이게
+  }
+  async function open(tab) {
     build();
     $('gsSheet').hidden = false; document.body.classList.add('ga-lock');
     status('불러오는 중…');
-    await load(); render();
-    status(sales.length ? '' : '첫 줄에 바로 입력해 보세요');
-    const grid = $('gsGrid'); grid.scrollTop = grid.scrollHeight;   // 새로 적을 빈 줄이 보이게
+    data.stock.loaded = data.sales.loaded = false;
+    await load('stock');                       // 재고 대수는 항상 탭에 표시
+    await switchTab(tab || cur);
+    if (!/실패|권한/.test($('gsStatus').textContent)) status(D().rows.length ? '' : '첫 줄에 바로 입력해 보세요');
   }
   function close() { $('gsSheet').hidden = true; document.body.classList.remove('ga-lock'); }
 
-  // 홈페이지 폰을 판매완료로 바꿨을 때: 장부에 한 줄 자동으로 추가
+  // 홈페이지 폰을 판매완료로 바꿨을 때: 판매 리스트에 한 줄 자동으로 추가
   async function addFromPhone(p) {
-    await open();
+    await open('sales');
     if (!p) return;
-    const row = blanks.find(isEmpty) || newBlank();
-    if (!blanks.includes(row)) blanks.push(row);
+    const st = data.sales;
+    const row = st.blanks.find(r => isEmptyIn('sales', r)) || newBlank('sales');
+    if (!st.blanks.includes(row)) st.blanks.push(row);
     Object.assign(row, { phone_id: p.id, arrived: p.arrived || null, sold_at: today(), model: p.model, color: p.color || null, storage: p.storage || null, grade: p.grade || null, sale_price: p.price ?? null, memo: p.id });
     render();
-    await saveRow(row, FIELDS);
+    await saveRow('sales', row, TABS.sales.fields);
     const tr = document.querySelector(`#gsGrid tr[data-key="${row._key}"]`);
     if (tr) { tr.scrollIntoView({ block: 'center' }); const d = tr.querySelector('input[data-k="deposit"]'); if (d) d.focus(); }
   }
 
   /* ---------- 엑셀(CSV) ---------- */
   function csv() {
-    const list = sales.filter(r => (period === 'all' || !r.sold_at || String(r.sold_at).slice(0, 7) === period) && !isEmpty(r));
-    if (!list.length) { status('내려받을 판매 기록이 없어요', true); return; }
+    const list = counted(cur), cols = T().cols;
+    if (!list.length) { status('내려받을 기록이 없어요', true); return; }
     const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const lines = [['NO'].concat(COLS.map(c => c.t)).join(',')].concat(list.map(r => ['1'].concat(COLS.map(c => (c.type === 'date' ? fmtDate(r[c.k]) : c.type === 'calc' ? (r.sale_price != null && r.cost != null ? r.sale_price - r.cost : '') : r[c.k]))).map(cell).join(',')));
+    const lines = [['NO'].concat(cols.map(c => c.t)).join(',')].concat(list.map(r => ['1'].concat(cols.map(c => (c.type === 'date' ? fmtDate(r[c.k]) : c.type === 'calc' ? (r.sale_price != null && r.cost != null ? r.sale_price - r.cost : '') : r[c.k]))).map(cell).join(',')));
     const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = `중고폰_판매_리스트_${period === 'all' ? '전체' : period}.csv`;
+    a.href = URL.createObjectURL(blob); a.download = `${T().file}_${cur === 'sales' ? (period === 'all' ? '전체' : period) : today()}.csv`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
-  window.GWSales = { open, add: phone => addFromPhone(phone && phone._row ? phone._row : phone), _parseDate: parseDate };
+  window.GWSales = { open: () => open(), add: phone => addFromPhone(phone && phone._row ? phone._row : phone) };
 })();

@@ -126,3 +126,26 @@ create policy "admins read sales" on public.used_sales for select to authenticat
 create policy "admins insert sales" on public.used_sales for insert to authenticated with check ((select private.is_used_admin()));
 create policy "admins update sales" on public.used_sales for update to authenticated using ((select private.is_used_admin())) with check ((select private.is_used_admin()));
 create policy "admins delete sales" on public.used_sales for delete to authenticated using ((select private.is_used_admin()));
+
+-- 재고 (관리자만 읽기/쓰기) — 열 구성은 기존 구글시트 재고 탭과 같음
+create table if not exists public.used_stock (
+  id uuid primary key default gen_random_uuid(),
+  arrived date,          -- 입고일
+  model text,            -- 모델명
+  color text,            -- 색상
+  storage text,          -- 용량
+  imei text,             -- IMEI
+  grade text,            -- 등급
+  ref_price text,        -- 단가표상 A급
+  memo text,             -- 기타
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.used_stock enable row level security;
+create index if not exists used_stock_arrived_idx on public.used_stock (arrived);
+create trigger used_stock_touch before update on public.used_stock
+  for each row execute function public.used_phones_touch();
+create policy "admins read stock" on public.used_stock for select to authenticated using ((select private.is_used_admin()));
+create policy "admins insert stock" on public.used_stock for insert to authenticated with check ((select private.is_used_admin()));
+create policy "admins update stock" on public.used_stock for update to authenticated using ((select private.is_used_admin())) with check ((select private.is_used_admin()));
+create policy "admins delete stock" on public.used_stock for delete to authenticated using ((select private.is_used_admin()));
