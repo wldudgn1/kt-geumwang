@@ -13,23 +13,23 @@
   const C = {
     arrived: { k: 'arrived', t: '입고일', type: 'date', w: 82 },
     sold_at: { k: 'sold_at', t: '판매일', type: 'date', w: 82 },
-    model: { k: 'model', t: '모델명', w: 124, list: 'gsModelList' },
-    color: { k: 'color', t: '색상', w: 78, center: true },
-    storage: { k: 'storage', t: '용량', w: 70, center: true },
-    imei: { k: 'imei', t: 'IMEI', w: 170, center: true },
+    model: { k: 'model', t: '모델명', w: 110, list: 'gsModelList' },
+    color: { k: 'color', t: '색상', w: 70, center: true },
+    storage: { k: 'storage', t: '용량', w: 62, center: true },
+    imei: { k: 'imei', t: 'IMEI', w: 130, center: true },
     grade: { k: 'grade', t: '등급', w: 50, center: true },
-    ref_price: { k: 'ref_price', t: '단가표상 A급', w: 118 },
-    sale_price: { k: 'sale_price', t: '판매금액', type: 'money', w: 100 },
-    margin: { k: 'margin', t: '마진', type: 'calc', w: 94, tone: 'green' },
-    channel: { k: 'channel', t: '판매채널', w: 92, tone: 'pink', center: true },
-    memo: { k: 'memo', t: '기타', w: 130, center: true },
+    ref_price: { k: 'ref_price', t: '단가표상 A급', w: 104 },
+    sale_price: { k: 'sale_price', t: '판매금액', type: 'money', w: 92 },
+    margin: { k: 'margin', t: '마진', type: 'calc', w: 86, tone: 'green' },
+    channel: { k: 'channel', t: '판매채널', w: 84, tone: 'pink', center: true },
+    memo: { k: 'memo', t: '기타', w: 110, center: true },
     deposit: { k: 'deposit', t: '입금', w: 82, list: 'gsDepositList', center: true },
-    cost: { k: 'cost', t: '매입가', type: 'money', w: 100 },
+    cost: { k: 'cost', t: '매입가', type: 'money', w: 92 },
   };
   const TABS = {
     stock: {
       label: '재고', table: 'used_stock', dateKey: 'arrived', file: '중고폰_재고',
-      cols: [C.arrived, C.model, C.color, C.storage, C.imei, C.grade, Object.assign({}, C.ref_price, { num: true }), Object.assign({}, C.memo, { w: 170 })],
+      cols: [C.arrived, Object.assign({}, C.model, { w: 130 }), C.color, C.storage, Object.assign({}, C.imei, { w: 190 }), C.grade, Object.assign({}, C.ref_price, { num: true, w: 118 }), Object.assign({}, C.memo, { w: 190 })],
     },
     sales: {
       label: '판매 리스트', table: 'used_sales', dateKey: 'sold_at', file: '중고폰_판매_리스트', period: true,
@@ -102,7 +102,12 @@
     if (built) return; built = true;
     const style = document.createElement('style');
     style.textContent = `
-    #gsSheet{display:flex;flex-direction:column;overflow:hidden;background:#fff}
+    /* 홈페이지 위에 뜨는 작은 창 (전체 화면 아님) */
+    #gsBack{position:fixed;inset:0;z-index:149;background:rgba(10,11,13,.5)}
+    #gsBack[hidden]{display:none}
+    #gsSheet{display:flex;flex-direction:column;overflow:hidden;background:#fff;inset:0;margin:auto;width:min(1340px,calc(100vw - 48px));height:min(740px,calc(100vh - 100px));border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.35)}
+    .gs-title{font-size:15px;font-weight:800;margin-right:4px;white-space:nowrap}
+    @media (max-width:760px){#gsSheet{width:calc(100vw - 16px);height:calc(100vh - 72px);border-radius:14px}.gs-title{display:none}}
     .gs-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #e3e5e8;flex-wrap:wrap;padding-top:calc(10px + env(safe-area-inset-top,0px))}
     .gs-tabs{display:flex;background:#f3f4f6;border-radius:10px;padding:3px;gap:3px;margin-right:6px}
     .gs-tabs button{height:36px;padding:0 16px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:15px;font-weight:800;color:#6b7178;cursor:pointer;white-space:nowrap}
@@ -147,8 +152,10 @@
     document.head.appendChild(style);
 
     document.body.insertAdjacentHTML('beforeend', `
-    <div class="ga-sheet" id="gsSheet" hidden>
+    <div id="gsBack" hidden></div>
+    <div class="ga-sheet" id="gsSheet" role="dialog" aria-label="재고·판매 장부" hidden>
       <div class="gs-head">
+        <span class="gs-title">재고·판매 장부</span>
         <div class="gs-tabs" id="gsTabs" role="tablist">
           <button type="button" data-tab="stock">재고 <small id="gsTabStock"></small></button>
           <button type="button" data-tab="sales">판매 리스트</button>
@@ -174,6 +181,7 @@
     </div>`);
 
     $('gsClose').addEventListener('click', close);
+    $('gsBack').addEventListener('click', close);
     $('gsCsv').addEventListener('click', csv);
     $('gsTabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) switchTab(b.dataset.tab); });
     $('gsPeriod').addEventListener('click', e => {
@@ -413,14 +421,14 @@
   }
   async function open(tab) {
     build();
-    $('gsSheet').hidden = false; document.body.classList.add('ga-lock');
+    $('gsSheet').hidden = false; $('gsBack').hidden = false; document.body.classList.add('ga-lock');
     status('불러오는 중…');
     data.stock.loaded = data.sales.loaded = false;
     await load('stock');                       // 재고 대수는 항상 탭에 표시
     await switchTab(tab || cur);
     if (!/실패|권한/.test($('gsStatus').textContent)) status(D().rows.length ? '' : '첫 줄에 바로 입력해 보세요');
   }
-  function close() { $('gsSheet').hidden = true; document.body.classList.remove('ga-lock'); }
+  function close() { $('gsSheet').hidden = true; $('gsBack').hidden = true; document.body.classList.remove('ga-lock'); }
 
   // 홈페이지 폰을 판매완료로 바꿨을 때: 판매 리스트에 한 줄 자동으로 추가
   async function addFromPhone(p) {
