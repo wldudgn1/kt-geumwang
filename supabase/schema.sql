@@ -111,8 +111,9 @@ create table if not exists public.used_sales (
   grade text,                                  -- 등급
   ref_price text,                              -- 단가표상 A급 (자유 입력)
   sale_price integer check (sale_price >= 0),  -- 판매금액
-  cost integer check (cost >= 0),              -- 매입가
-  margin integer,                              -- 마진 (직접 입력. 비면 판매금액 - 매입가로 표시)
+  -- 마진은 저장하지 않고 화면에서 계산: 단가표상 A급 - 판매금액
+  cost integer check (cost >= 0),              -- (사용 안 함) 예전 매입가
+  margin integer,                              -- (사용 안 함)
   channel text,                                -- 판매채널 (예: 당근74)
   memo text,                                   -- 기타
   deposit text,                                -- 입금 (신한/카뱅/입금전 등)
