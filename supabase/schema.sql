@@ -96,3 +96,31 @@ create policy "admins delete phone photos" on storage.objects
   for delete to authenticated using (bucket_id = 'used-phones' and (select private.is_used_admin()));
 
 -- 관리자 추가: insert into public.used_admins (email) values ('직원@이메일.com');
+
+-- 판매 장부 (관리자만 읽기/쓰기, 손님에게는 보이지 않음)
+create table if not exists public.used_sales (
+  id uuid primary key default gen_random_uuid(),
+  sold_at date not null default current_date,
+  phone_id text,                               -- 홈페이지에 올렸던 폰이면 상품번호
+  model text not null,
+  storage text,
+  color text,
+  grade text,
+  sale_price integer not null check (sale_price >= 0),
+  cost integer check (cost >= 0),              -- 매입가(선택)
+  payment text not null default 'cash' check (payment in ('cash', 'transfer')),
+  channel text not null default 'store' check (channel in ('store', 'online', 'delivery')),
+  settled boolean not null default false,      -- 정산 완료 여부
+  settled_at date,
+  memo text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.used_sales enable row level security;
+create index if not exists used_sales_sold_at_idx on public.used_sales (sold_at desc);
+create trigger used_sales_touch before update on public.used_sales
+  for each row execute function public.used_phones_touch();
+create policy "admins read sales" on public.used_sales for select to authenticated using ((select private.is_used_admin()));
+create policy "admins insert sales" on public.used_sales for insert to authenticated with check ((select private.is_used_admin()));
+create policy "admins update sales" on public.used_sales for update to authenticated using ((select private.is_used_admin())) with check ((select private.is_used_admin()));
+create policy "admins delete sales" on public.used_sales for delete to authenticated using ((select private.is_used_admin()));

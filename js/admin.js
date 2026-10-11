@@ -40,7 +40,7 @@
   .ga-bar{position:sticky;top:0;z-index:70;background:#E60012;color:#fff;padding-top:env(safe-area-inset-top,0px)}
   .ga-bar-in{display:flex;align-items:center;gap:8px;min-height:50px;flex-wrap:wrap;padding-block:6px}
   .ga-bar b{margin-right:auto;font-size:15px}
-  .ga-bar button{height:38px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;font-weight:700;font-size:14px}
+  .ga-bar button{height:38px;padding:0 12px;white-space:nowrap;border-radius:10px;border:1px solid rgba(255,255,255,.5);background:transparent;color:#fff;font-weight:700;font-size:14px}
   .ga-bar .ga-add{background:#fff;color:#E60012;border-color:#fff}
   body.is-admin .header{top:50px}
   body.is-admin .mobile-bar{display:none}
@@ -269,8 +269,9 @@
     if (error || !adm || !adm.length) return false;
     document.body.classList.add('is-admin');
     if (!$('gaBar')) {
-      document.body.insertAdjacentHTML('afterbegin', `<div class="ga-bar" id="gaBar"><div class="wrap ga-bar-in"><b>관리자 모드</b><button type="button" class="ga-add" id="gaAdd">＋ 새 폰 등록</button><button type="button" id="gaLogout">로그아웃</button></div></div>`);
+      document.body.insertAdjacentHTML('afterbegin', `<div class="ga-bar" id="gaBar"><div class="wrap ga-bar-in"><b>관리자 모드</b><button type="button" class="ga-add" id="gaAdd">＋ 새 폰 등록</button><button type="button" id="gaSales">판매 장부</button><button type="button" id="gaLogout">로그아웃</button></div></div>`);
       $('gaAdd').addEventListener('click', () => openEditor(null));
+      $('gaSales').addEventListener('click', () => window.GWSales && window.GWSales.open());
       $('gaLogout').addEventListener('click', async () => {
         await c.auth.signOut();
         document.body.classList.remove('is-admin'); $('gaBar').remove(); window.GW.rerender(); toast('로그아웃했어요.');
@@ -291,7 +292,9 @@
       const p = window.GW.get(id); if (!p || p.status === v) return;
       const prev = p.status; window.GW.setStatus(id, v);
       const { error } = await sb.from('used_phones').update({ status: v }).eq('id', id);
-      if (error) { window.GW.setStatus(id, prev); toast(friendly(error)); } else toast(`${id} → ${STATUS[v]}`);
+      if (error) { window.GW.setStatus(id, prev); toast(friendly(error)); return; }
+      toast(`${id} → ${STATUS[v]}`);
+      if (v === 'sold' && window.GWSales && (await ask(`${id} 판매 기록을 장부에 남길까요?`))) window.GWSales.add(window.GW.get(id));
     }
   });
 
@@ -456,7 +459,7 @@
   });
 
   /* ---------- 시작 ---------- */
-  window.GWAdmin = { edit: id => openEditor(window.GW.get(id)), open: openLogin };
+  window.GWAdmin = { edit: id => openEditor(window.GW.get(id)), open: openLogin, sb: () => sb, ask, toast, friendly };
   if (location.hash === '#admin') openLogin();
   if (hasSavedSession()) client().then(enter).catch(() => {});
 })();
