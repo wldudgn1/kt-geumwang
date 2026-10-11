@@ -20,7 +20,7 @@
     grade: { k: 'grade', t: '등급', w: 50, center: true },
     ref_price: { k: 'ref_price', t: '단가표상 A급', w: 104 },
     sale_price: { k: 'sale_price', t: '판매금액', type: 'money', w: 92 },
-    margin: { k: 'margin', t: '마진', type: 'calc', w: 86, tone: 'green' },
+    margin: { k: 'margin', t: '마진', type: 'money', auto: true, w: 86, tone: 'green' },
     channel: { k: 'channel', t: '판매채널', w: 84, tone: 'pink', center: true },
     memo: { k: 'memo', t: '기타', w: 110, center: true },
     deposit: { k: 'deposit', t: '입금', w: 82, list: 'gsDepositList', center: true },
@@ -76,8 +76,10 @@
     if (col.num && isPlainNumber(s)) return comma(toNum(s));   // 단가표: 숫자면 콤마 맞추고, 글자면 그대로
     return s || null;
   }
+  // 마진: 직접 적은 값이 있으면 그 값, 없으면 판매금액 - 매입가
+  const marginOf = row => (row.margin != null ? row.margin : (row.sale_price != null && row.cost != null ? row.sale_price - row.cost : null));
   function showCell(col, row) {
-    if (col.type === 'calc') return row.sale_price != null && row.cost != null ? comma(row.sale_price - row.cost) : '';
+    if (col.auto) return comma(marginOf(row));
     const v = row[col.k];
     if (col.type === 'date') return fmtDate(v);
     if (col.type === 'money') return comma(v);
@@ -137,7 +139,7 @@
     .gs-t td input{width:100%;height:32px;border:0;background:transparent;padding:0 7px;font:inherit;font-size:13.5px;color:#111214;outline:0;font-variant-numeric:tabular-nums}
     .gs-t td input.c{text-align:center}.gs-t td input.r{text-align:right}
     .gs-t td input:focus{box-shadow:inset 0 0 0 2px #1a73e8;background:#fff}
-    .gs-t td input[readonly]{color:#0a7a35;font-weight:700;cursor:default}
+    .gs-t td input.auto{color:#0a7a35;font-weight:700}
     .gs-t td input.bad{box-shadow:inset 0 0 0 2px #E60012}
     .gs-t td.act{text-align:center;border-right:0;white-space:nowrap;padding:0 4px}
     .gs-t td.act .x{width:26px;height:26px;border:0;border-radius:6px;background:transparent;color:#9aa0a6;cursor:pointer;font-size:13px}
@@ -260,7 +262,7 @@
     return (cur === 'stock' ? `<button type="button" class="sell" data-sell="${row._key}">판매</button> ` : '') + `<button type="button" class="x" data-del="${row._key}" aria-label="줄 삭제">✕</button>`;
   }
   function cellHtml(row, col) {
-    const cls = col.type === 'money' || col.type === 'calc' || col.num ? 'r' : col.center || col.type === 'date' ? 'c' : '';
+    const cls = (col.type === 'money' || col.num ? 'r' : col.center || col.type === 'date' ? 'c' : '') + (col.auto && row.margin == null ? ' auto' : '');
     const tdCls = [col.tone || '', col.k === 'deposit' && /입금전/.test(row.deposit || '') ? 'wait' : ''].join(' ').trim();
     return `<td class="${tdCls}"><input data-k="${col.k}" class="${cls}" value="${esc(showCell(col, row))}" ${col.type === 'calc' ? 'readonly tabindex="-1"' : ''} ${col.list ? `list="${col.list}"` : ''} ${col.type === 'money' ? 'inputmode="numeric"' : ''} autocomplete="off" aria-label="${esc(col.t)}"></td>`;
   }
@@ -296,7 +298,8 @@
     const col = T().cols.find(c => c.k === k), inp = tr.querySelector(`input[data-k="${k}"]`);
     if (col && inp && document.activeElement !== inp) inp.value = showCell(col, row);
     if (k === 'deposit' && inp) inp.parentElement.classList.toggle('wait', /입금전/.test(row.deposit || ''));
-    const m = tr.querySelector('input[data-k="margin"]'); if (m) m.value = showCell(C.margin, row);
+    const m = tr.querySelector('input[data-k="margin"]');
+    if (m && document.activeElement !== m) { m.value = showCell(C.margin, row); m.classList.toggle('auto', row.margin == null); }
   }
   function summary() {
     const list = counted(cur);
@@ -315,7 +318,7 @@
         <div><span>판매댓수</span><b>${list.length}</b></div>
         <div><span>매입합산</span><b>${comma(sum('cost'))}</b></div>
         <div><span>매출</span><b>${comma(sum('sale_price'))}</b></div>
-        <div><span>마진</span><b>${comma(sum('sale_price') - sum('cost'))}</b></div>
+        <div><span>마진</span><b>${comma(list.reduce((a, r) => a + (marginOf(r) ?? (r.sale_price || 0)), 0))}</b></div>
         <div class="${wait.length ? 'warn' : ''}"><span>입금전</span><b>${wait.length}건 · ${comma(wait.reduce((a, r) => a + (r.sale_price || 0), 0))}</b></div>`;
     }
     if (data.stock.loaded) $('gsTabStock').textContent = counted('stock').length + '대';
@@ -336,6 +339,7 @@
     if (bad) { status(col.t + ' 칸을 다시 확인해 주세요 (예: ' + (col.type === 'date' ? '26.10.01 또는 10.1' : '610000') + ')', true); return; }
     row[col.k] = v;
     inp.value = showCell(col, row);
+    if (col.auto) inp.classList.toggle('auto', row.margin == null);
     paintCell(row, col.k);
     saveRow(cur, row, [col.k]);
   }
@@ -449,7 +453,7 @@
     const list = counted(cur), cols = T().cols;
     if (!list.length) { status('내려받을 기록이 없어요', true); return; }
     const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const lines = [['NO'].concat(cols.map(c => c.t)).join(',')].concat(list.map(r => ['1'].concat(cols.map(c => (c.type === 'date' ? fmtDate(r[c.k]) : c.type === 'calc' ? (r.sale_price != null && r.cost != null ? r.sale_price - r.cost : '') : r[c.k]))).map(cell).join(',')));
+    const lines = [['NO'].concat(cols.map(c => c.t)).join(',')].concat(list.map(r => ['1'].concat(cols.map(c => (c.type === 'date' ? (r[c.k] || '') : c.auto ? (marginOf(r) ?? '') : r[c.k]))).map(cell).join(',')));
     const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = `${T().file}_${cur === 'sales' ? (period === 'all' ? '전체' : period) : today()}.csv`;
