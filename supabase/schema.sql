@@ -98,21 +98,23 @@ create policy "admins delete phone photos" on storage.objects
 -- 관리자 추가: insert into public.used_admins (email) values ('직원@이메일.com');
 
 -- 판매 장부 (관리자만 읽기/쓰기, 손님에게는 보이지 않음)
+-- 열 구성은 기존 구글시트 "중고폰 판매 리스트"와 같음 + 매입가
 create table if not exists public.used_sales (
   id uuid primary key default gen_random_uuid(),
-  sold_at date not null default current_date,
+  arrived date,                                -- 입고일
+  sold_at date,                                -- 판매일
   phone_id text,                               -- 홈페이지에 올렸던 폰이면 상품번호
-  model text not null,
-  storage text,
-  color text,
-  grade text,
-  sale_price integer not null check (sale_price >= 0),
-  cost integer check (cost >= 0),              -- 매입가(선택)
-  payment text not null default 'cash' check (payment in ('cash', 'transfer')),
-  channel text not null default 'store' check (channel in ('store', 'online', 'delivery')),
-  settled boolean not null default false,      -- 정산 완료 여부
-  settled_at date,
-  memo text,
+  model text,                                  -- 모델명
+  color text,                                  -- 색상
+  storage text,                                -- 용량
+  imei text,                                   -- IMEI
+  grade text,                                  -- 등급
+  ref_price text,                              -- 단가표상 A급 (자유 입력)
+  sale_price integer check (sale_price >= 0),  -- 판매금액
+  cost integer check (cost >= 0),              -- 매입가 (마진 = 판매금액 - 매입가)
+  channel text,                                -- 판매채널 (예: 당근74)
+  memo text,                                   -- 기타
+  deposit text,                                -- 입금 (신한/카뱅/입금전 등)
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
