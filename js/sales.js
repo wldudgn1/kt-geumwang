@@ -317,7 +317,7 @@
       $('gsSum').innerHTML = `
         <div><span>판매댓수</span><b>${list.length}</b></div>
         <div><span>단가표 합계</span><b>${comma(list.reduce((a, r) => a + (isPlainNumber(r.ref_price) ? toNum(r.ref_price) : 0), 0))}</b></div>
-        <div><span>매출</span><b>${comma(sum('sale_price'))}</b></div>
+        <div><span>판매금액</span><b>${comma(sum('sale_price'))}</b></div>
         <div><span>마진</span><b>${comma(list.reduce((a, r) => a + (marginOf(r) || 0), 0))}</b></div>
         <div class="${wait.length ? 'warn' : ''}"><span>입금전</span><b>${wait.length}건 · ${comma(wait.reduce((a, r) => a + (r.sale_price || 0), 0))}</b></div>`;
     }
