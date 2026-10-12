@@ -151,3 +151,24 @@ create policy "admins read stock" on public.used_stock for select to authenticat
 create policy "admins insert stock" on public.used_stock for insert to authenticated with check ((select private.is_used_admin()));
 create policy "admins update stock" on public.used_stock for update to authenticated using ((select private.is_used_admin())) with check ((select private.is_used_admin()));
 create policy "admins delete stock" on public.used_stock for delete to authenticated using ((select private.is_used_admin()));
+
+-- 예약 (원하는 폰이 들어오면 연락드릴 손님) · VIP 고객 메모 — 관리자만 읽기/쓰기
+create table if not exists public.used_reservations (
+  id uuid primary key default gen_random_uuid(),
+  reserved_at date,      -- 날짜
+  name text,             -- 이름
+  phone text,            -- 휴대폰번호
+  model text,            -- 모델
+  memo text,             -- 내용
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.used_vips (
+  id uuid primary key default gen_random_uuid(),
+  name text,             -- 이름
+  phone text,            -- 휴대폰번호
+  memo text,             -- 내용
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+-- 두 표 모두: RLS 켜고 select/insert/update/delete 를 private.is_used_admin() 인 로그인 사용자에게만 허용 (used_stock 과 같은 방식)

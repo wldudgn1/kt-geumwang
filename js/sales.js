@@ -35,6 +35,14 @@
       cols: [C.arrived, C.sold_at, C.model, C.color, C.storage, C.imei, C.grade, Object.assign({}, C.ref_price, { tone: 'green', num: true }), C.sale_price, C.margin, C.channel, Object.assign({}, C.memo, { w: 150 }), C.deposit],
     },
   };
+  TABS.resv = {
+    label: '예약', table: 'used_reservations', dateKey: 'reserved_at', file: '중고폰_예약',
+    cols: [{ k: 'reserved_at', t: '날짜', type: 'date', w: 90 }, { k: 'name', t: '이름', w: 110, center: true }, { k: 'phone', t: '휴대폰번호', type: 'phone', w: 150, center: true }, Object.assign({}, C.model, { t: '모델', w: 170 }), { k: 'memo', t: '내용', w: 460 }],
+  };
+  TABS.vip = {
+    label: 'VIP', table: 'used_vips', dateKey: null, file: '중고폰_VIP',
+    cols: [{ k: 'name', t: '이름', w: 130, center: true }, { k: 'phone', t: '휴대폰번호', type: 'phone', w: 160, center: true }, { k: 'memo', t: '내용', w: 690 }],
+  };
   Object.values(TABS).forEach(T => { T.fields = T.cols.filter(c => c.type !== 'calc').map(c => c.k); });
   const BLANK_ROWS = 8;
 
@@ -67,11 +75,20 @@
   }
   const fmtDate = iso => (iso ? String(iso).slice(2, 4) + '.' + String(iso).slice(5, 7) + '.' + String(iso).slice(8, 10) : '');
   const isPlainNumber = s => /^[\d,\s]+$/.test(String(s ?? '')) && /\d/.test(String(s));
+  // 01012345678 → 010-1234-5678 (숫자만 적었을 때만 모양을 맞춤)
+  function fmtPhone(s) {
+    const d = s.replace(/[^0-9]/g, '');
+    if (!/^[\d\s-]+$/.test(s)) return s || null;
+    if (d.length === 11) return d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7);
+    if (d.length === 10) return d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6);
+    return s || null;
+  }
 
   function parseCell(col, text) {
     const s = String(text ?? '').trim();
     if (col.type === 'date') return parseDate(s);
     if (col.type === 'money') return toNum(s);
+    if (col.type === 'phone') return fmtPhone(s);
     if (col.num && isPlainNumber(s)) return comma(toNum(s));   // 단가표: 숫자면 콤마 맞추고, 글자면 그대로
     return s || null;
   }
@@ -85,8 +102,9 @@
     return v ?? '';
   }
 
-  const data = { stock: { rows: [], blanks: [], loaded: false }, sales: { rows: [], blanks: [], loaded: false } };
-  let cur = store.get('gs-tab') === 'sales' ? 'sales' : 'stock';
+  const data = {};
+  Object.keys(TABS).forEach(k => { data[k] = { rows: [], blanks: [], loaded: false }; });
+  let cur = TABS[store.get('gs-tab')] ? store.get('gs-tab') : 'stock';
   let period = today().slice(0, 7);     // 판매 리스트 기간: 'YYYY-MM' 또는 'all'
   let built = false;
   let uid = 0;
@@ -147,6 +165,7 @@
     .gs-t td.act .sell{height:26px;padding:0 10px;border:0;border-radius:6px;background:#E60012;color:#fff;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer}
     .gs-foot{border-top:1px solid #e3e5e8;padding:8px 14px calc(8px + env(safe-area-inset-bottom,0px));font-size:12.5px;color:#6b7178;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
     .gs-foot details{flex-basis:100%}
+    .gs-foot details[hidden]{display:none}
     .gs-foot summary{cursor:pointer;font-weight:700;color:#3b3f45}
     .gs-models{margin-top:6px;max-height:160px;overflow:auto;display:flex;flex-wrap:wrap;gap:6px}
     .gs-models span{padding:4px 10px;border-radius:999px;background:#f3f4f6;color:#111214;font-weight:600}
@@ -161,6 +180,8 @@
         <div class="gs-tabs" id="gsTabs" role="tablist">
           <button type="button" data-tab="stock">재고 <small id="gsTabStock"></small></button>
           <button type="button" data-tab="sales">판매 리스트</button>
+          <button type="button" data-tab="resv">예약</button>
+          <button type="button" data-tab="vip">VIP</button>
         </div>
         <div class="gs-period" id="gsPeriod">
           <button type="button" class="ga-chip" data-p="this">이번 달</button>
@@ -176,7 +197,7 @@
       <div class="gs-grid" id="gsGrid"></div>
       <div class="gs-foot">
         <span id="gsHelp"></span>
-        <details><summary>모델별 집계 보기</summary><div class="gs-models" id="gsModels"></div></details>
+        <details id="gsDetails"><summary>모델별 집계 보기</summary><div class="gs-models" id="gsModels"></div></details>
       </div>
       <datalist id="gsModelList"></datalist>
       <datalist id="gsDepositList"><option value="입금전"><option value="신한"><option value="카뱅"><option value="현금"></datalist>
@@ -210,7 +231,9 @@
   async function load(tab) {
     const all = [], cfg = TABS[tab];
     for (let from = 0; ; from += 1000) {
-      const { data: rows, error } = await sb().from(cfg.table).select('*').order(cfg.dateKey, { ascending: true }).order('created_at', { ascending: true }).range(from, from + 999);
+      let q = sb().from(cfg.table).select('*');
+      if (cfg.dateKey) q = q.order(cfg.dateKey, { ascending: true });
+      const { data: rows, error } = await q.order('created_at', { ascending: true }).range(from, from + 999);
       if (error) { status(A().friendly(error), true); return false; }
       all.push(...(rows || []));
       if (!rows || rows.length < 1000) break;
@@ -234,7 +257,7 @@
     row._q = (row._q || Promise.resolve()).then(async () => {
       if (!row.id) {
         if (isEmptyIn(tab, row)) return;
-        if (!row[cfg.dateKey]) { row[cfg.dateKey] = today(); if (tab === cur) paintCell(row, cfg.dateKey); }
+        if (cfg.dateKey && !row[cfg.dateKey]) { row[cfg.dateKey] = today(); if (tab === cur) paintCell(row, cfg.dateKey); }
         const payload = {}; cfg.fields.forEach(k => { payload[k] = row[k] ?? null; });
         if (tab === 'sales' && row.phone_id) payload.phone_id = row.phone_id;
         const { data: ins, error } = await sb().from(cfg.table).insert(payload).select().single();
@@ -283,7 +306,7 @@
     const thisYm = now.getFullYear() + '-' + pad(now.getMonth() + 1), lastYm = l.getFullYear() + '-' + pad(l.getMonth() + 1);
     document.querySelectorAll('#gsPeriod [data-p]').forEach(b => b.classList.toggle('on', (b.dataset.p === 'all' && period === 'all') || (b.dataset.p === 'this' && period === thisYm) || (b.dataset.p === 'last' && period === lastYm)));
     $('gsMonth').value = period === 'all' ? '' : period;
-    $('gsHelp').textContent = (cur === 'stock' ? '팔린 폰은 줄 끝의 "판매"를 누르면 판매 리스트로 넘어가요 · ' : '') + '칸을 고치고 다른 칸으로 넘어가면 자동 저장 · Enter = 아래 칸 · 구글시트에서 복사한 줄을 그대로 붙여넣기 · 날짜는 10.1 처럼 쳐도 돼요';
+    $('gsHelp').textContent = (cur === 'stock' ? '팔린 폰은 줄 끝의 "판매"를 누르면 판매 리스트로 넘어가요 · ' : cur === 'resv' ? '원하는 폰이 들어오면 연락드릴 손님을 적어두세요 · ' : cur === 'vip' ? '중고폰을 자주 사가는 단골 손님 메모 · ' : '') + '칸을 고치고 다른 칸으로 넘어가면 자동 저장 · Enter = 아래 칸 · 구글시트에서 복사한 줄을 그대로 붙여넣기 · 날짜는 10.1 처럼 쳐도 돼요';
     summary();
   }
   function topUpBlanks() {
@@ -312,7 +335,7 @@
         <div><span>단가표 합계</span><b>${comma(priced.reduce((a, r) => a + (toNum(r.ref_price) || 0), 0))}</b></div>
         <div><span>단가 미입력</span><b>${list.length - priced.length}대</b></div>
         <div><span>가장 오래된 입고</span><b>${oldest ? fmtDate(oldest) : '-'}</b></div>`;
-    } else {
+    } else if (cur === 'sales') {
       const wait = list.filter(r => /입금전/.test(r.deposit || ''));
       $('gsSum').innerHTML = `
         <div><span>판매댓수</span><b>${list.length}</b></div>
@@ -320,12 +343,20 @@
         <div><span>판매금액</span><b>${comma(sum('sale_price'))}</b></div>
         <div><span>마진</span><b>${comma(list.reduce((a, r) => a + (marginOf(r) || 0), 0))}</b></div>
         <div class="${wait.length ? 'warn' : ''}"><span>입금전</span><b>${wait.length}건 · ${comma(wait.reduce((a, r) => a + (r.sale_price || 0), 0))}</b></div>`;
+    } else if (cur === 'resv') {
+      const oldest = list.map(r => r.reserved_at).filter(Boolean).sort()[0];
+      $('gsSum').innerHTML = `
+        <div><span>예약 건수</span><b>${list.length}</b></div>
+        <div><span>가장 오래된 예약</span><b>${oldest ? fmtDate(oldest) : '-'}</b></div>`;
+    } else {
+      $('gsSum').innerHTML = `<div><span>VIP 고객</span><b>${list.length}명</b></div>`;
     }
+    $('gsDetails').hidden = cur === 'vip';
     if (data.stock.loaded) $('gsTabStock').textContent = counted('stock').length + '대';
     const by = {};
-    list.forEach(r => { const k = r.model || '(모델명 없음)'; by[k] = by[k] || { n: 0, s: 0 }; by[k].n++; by[k].s += (cur === 'stock' ? (isPlainNumber(r.ref_price) ? toNum(r.ref_price) : 0) : r.sale_price) || 0; });
-    $('gsModels').innerHTML = Object.entries(by).sort((a, b) => b[1].n - a[1].n || b[1].s - a[1].s).map(([m, v]) => `<span>${esc(m)} ${v.n}대${v.s ? ' · ' + comma(v.s) : ''}</span>`).join('') || '기록이 없어요.';
-    const names = Array.from(new Set(data.stock.rows.concat(data.sales.rows).map(r => r.model).concat((window.GW ? window.GW.all() : []).map(p => p.model)).filter(Boolean)));
+    list.forEach(r => { const k = r.model || '(모델명 없음)'; by[k] = by[k] || { n: 0, s: 0 }; by[k].n++; by[k].s += (cur === 'stock' ? (isPlainNumber(r.ref_price) ? toNum(r.ref_price) : 0) : cur === 'sales' ? r.sale_price : 0) || 0; });
+    $('gsModels').innerHTML = Object.entries(by).sort((a, b) => b[1].n - a[1].n || b[1].s - a[1].s).map(([m, v]) => `<span>${esc(m)} ${v.n}${cur === 'resv' ? '건' : '대'}${v.s ? ' · ' + comma(v.s) : ''}</span>`).join('') || '기록이 없어요.';
+    const names = Array.from(new Set(data.stock.rows.concat(data.sales.rows, data.resv.rows).map(r => r.model).concat((window.GW ? window.GW.all() : []).map(p => p.model)).filter(Boolean)));
     $('gsModelList').innerHTML = names.map(m => `<option value="${esc(m)}">`).join('');
   }
 
@@ -426,7 +457,7 @@
     build();
     $('gsSheet').hidden = false; $('gsBack').hidden = false; document.body.classList.add('ga-lock');
     status('불러오는 중…');
-    data.stock.loaded = data.sales.loaded = false;
+    Object.keys(data).forEach(k => { data[k].loaded = false; });
     await load('stock');                       // 재고 대수는 항상 탭에 표시
     await switchTab(tab || cur);
     if (!/실패|권한/.test($('gsStatus').textContent)) status(D().rows.length ? '' : '첫 줄에 바로 입력해 보세요');
